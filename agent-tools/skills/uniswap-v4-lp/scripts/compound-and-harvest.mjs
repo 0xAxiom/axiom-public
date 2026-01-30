@@ -261,8 +261,10 @@ async function addLiquidity(publicClient, walletClient, account, tokenId, poolKe
 
   await sleep(1000);
 
-  // INCREASE(0x00) + CLOSE_CURRENCY(0x11) x2 — required for Clanker hook pools
-  const addActionsHex = '0x001111';
+  // INCREASE(0x00) + SETTLE_PAIR(0x0d) — 2 actions
+  // SETTLE_PAIR works for INCREASE (user pays tokens into pool)
+  // CLOSE_CURRENCY is for DECREASE (pool returns tokens to user)
+  const addActionsHex = '0x000d';
   const amount0Max = amount0 > 0n ? amount0 * 150n / 100n : 0n;
   const amount1Max = amount1 > 0n ? amount1 * 150n / 100n : 0n;
 
@@ -271,12 +273,14 @@ async function addLiquidity(publicClient, walletClient, account, tokenId, poolKe
     [tokenId.toString(), newLiquidity.toString(), amount0Max.toString(), amount1Max.toString(), '0x']
   );
 
-  const closeCurrency0 = defaultAbiCoder.encode(['address'], [poolKey.currency0]);
-  const closeCurrency1 = defaultAbiCoder.encode(['address'], [poolKey.currency1]);
+  const settleParams = defaultAbiCoder.encode(
+    ['address', 'address'],
+    [poolKey.currency0, poolKey.currency1]
+  );
 
   const addData = encodeAbiParameters(
     parseAbiParameters('bytes, bytes[]'),
-    [addActionsHex, [increaseParams, closeCurrency0, closeCurrency1]]
+    [addActionsHex, [increaseParams, settleParams]]
   );
 
   const hash = await walletClient.writeContract({
