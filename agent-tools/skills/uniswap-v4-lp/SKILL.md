@@ -66,6 +66,15 @@ node auto-compound.mjs --token-id <ID> --strategy time --loop --interval 14400
 
 # Preview
 node auto-compound.mjs --token-id <ID> --dry-run
+
+# Compound & Harvest: split fees — compound some, harvest rest as USDC
+node compound-and-harvest.mjs --token-id <ID> \
+  --harvest-address 0xYOUR_ADDRESS --compound-pct 50
+node compound-and-harvest.mjs --token-id <ID> \
+  --harvest-address 0xYOUR_ADDRESS --compound-pct 70 --slippage 3
+node compound-and-harvest.mjs --token-id <ID> \
+  --harvest-address 0xYOUR_ADDRESS --dry-run
+
 # Remove liquidity (partial)
 node remove-liquidity.mjs --token-id <ID> --percent 50
 
@@ -157,6 +166,64 @@ node auto-compound.mjs --token-id <ID> --strategy time --loop --interval 14400
 | <$100K/day | dollar | 4h | $50+ |
 
 Both strategies always enforce a gas floor — you'll never burn money on gas.
+
+## Compound & Harvest
+
+Split LP fees: compound a percentage back into the position and harvest the rest as USDC.
+
+### How It Works
+
+1. **Collect** all accrued fees (DECREASE_LIQUIDITY with 0 + CLOSE_CURRENCY)
+2. **Split** fees by compound-pct (default 50/50)
+3. **Compound** the compound portion back into the position (INCREASE_LIQUIDITY + SETTLE_PAIR)
+4. **Swap** the harvest portion of both tokens to USDC via Uniswap V3 SwapRouter02
+   - WETH → USDC direct (0.05% pool)
+   - Meme tokens → WETH → USDC multi-hop (tries 1%, 0.3%, 0.05% fee tiers)
+5. **Transfer** all USDC to the harvest address
+
+### Usage
+
+```bash
+# Preview (dry run)
+node compound-and-harvest.mjs --token-id 1078751 \
+  --harvest-address 0xcbC7E8A39A0Ec84d6B0e8e0dd98655F348ECD44F --dry-run
+
+# 50/50 split (default)
+node compound-and-harvest.mjs --token-id 1078751 \
+  --harvest-address 0xcbC7E8A39A0Ec84d6B0e8e0dd98655F348ECD44F
+
+# 70% compound, 30% harvest
+node compound-and-harvest.mjs --token-id 1078751 \
+  --harvest-address 0xcbC7E8A39A0Ec84d6B0e8e0dd98655F348ECD44F \
+  --compound-pct 70
+
+# 100% harvest (take all fees as USDC, no compounding)
+node compound-and-harvest.mjs --token-id 1078751 \
+  --harvest-address 0xcbC7E8A39A0Ec84d6B0e8e0dd98655F348ECD44F \
+  --compound-pct 0
+
+# Custom slippage
+node compound-and-harvest.mjs --token-id 1078751 \
+  --harvest-address 0xcbC7E8A39A0Ec84d6B0e8e0dd98655F348ECD44F \
+  --slippage 3
+```
+
+### Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--token-id` | required | LP NFT token ID |
+| `--harvest-address` | required | Address to receive harvested USDC |
+| `--compound-pct` | 50 | Percentage to compound (0-100) |
+| `--slippage` | 1 | Slippage tolerance for swaps (%) |
+| `--dry-run` | false | Preview without executing |
+| `--rpc` | env/default | Base RPC URL |
+
+### Swap Routing
+
+- Uses **Uniswap V3 SwapRouter02** (`0x2626664c2603336E57B271c5C0b26F421741e481`)
+- WETH → USDC: `exactInputSingle` with 500 (0.05%) fee tier
+- Other tokens → USDC: `exactInput` multi-hop through WETH, auto-tries fee tiers 10000/3000/500
 
 ## Position Strategy Recommendations
 
