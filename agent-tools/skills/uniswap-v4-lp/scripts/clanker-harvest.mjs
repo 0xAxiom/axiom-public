@@ -118,6 +118,7 @@ const SWAP_ROUTER_ABI = parseAbi([
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const retry = async (fn, n = 3) => { for (let i = 0; i < n; i++) { try { return await fn(); } catch (e) { if (i === n - 1) throw e; await sleep(1000); } } };
+const pad32 = (hex) => hex.replace('0x', '').padStart(64, '0');
 const Q96 = BigInt(2) ** BigInt(96);
 
 function computePoolId(poolKey) {
@@ -236,16 +237,25 @@ ${DRY_RUN ? '🔮 DRY RUN MODE' : '🔥 LIVE MODE'}
     const actualTickLower = Math.min(tL, tU);
     const actualTickUpper = Math.max(tL, tU);
 
+    // Proven pattern from auto-compound: DECREASE(0x01) + CLOSE_CURRENCY(0x11) x2
+    // Single closeParams encodes both currencies + recipient
     const collectActionsHex = '0x0111';
-    const decreaseParams = defaultAbiCoder.encode(
-      ['uint256', 'uint256', 'uint128', 'uint128', 'bytes'],
-      [tokenId.toString(), '0', '0', '0', '0x']
-    );
-    const closeParams0 = defaultAbiCoder.encode(['address'], [poolKey.currency0]);
-    const closeParams1 = defaultAbiCoder.encode(['address'], [poolKey.currency1]);
+    const decreaseParams = '0x' +
+      pad32('0x' + tokenId.toString(16)) +
+      '0'.padStart(64, '0') +     // liquidity = 0 (fees only)
+      '0'.padStart(64, '0') +     // amount0Min = 0
+      '0'.padStart(64, '0') +     // amount1Min = 0
+      (5 * 32).toString(16).padStart(64, '0') +
+      '0'.padStart(64, '0');      // hookData = empty
+
+    const closeParams = '0x' +
+      pad32(poolKey.currency0) +
+      pad32(poolKey.currency1) +
+      pad32(account.address);
+
     const collectData = encodeAbiParameters(
       parseAbiParameters('bytes, bytes[]'),
-      [collectActionsHex, [decreaseParams, closeParams0, closeParams1]]
+      [collectActionsHex, [decreaseParams, closeParams]]
     );
 
     // Approve Permit2
