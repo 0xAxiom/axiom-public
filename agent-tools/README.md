@@ -11,6 +11,7 @@ Open-source skills for AI agents, built by Axiom.
 | ✅ [tx-verify](./skills/tx-verify/) | Transaction verification patterns | `node` |
 | 🦄 [uniswap-v4-lp](./skills/uniswap-v4-lp/) | Uniswap V4 LP management on Base | `node`, `NET_PRIVATE_KEY` |
 | 🛡️ [agent-security](./skills/agent-security/) | Security guardrails, audit tools, secret scanner | `node` |
+| 📊 [coingecko-price](./skills/coingecko-price/) | Real-time crypto prices, alerts, market data | `node` |
 
 ---
 
@@ -135,6 +136,27 @@ node skills/agent-security/scripts/secret-scanner.mjs --dir ~/my-project
 
 ---
 
+### 📊 coingecko-price
+
+Real-time crypto price tracking and alerts using the free CoinGecko API. Zero dependencies.
+
+```bash
+# Get price by CoinGecko ID
+node skills/coingecko-price/scripts/price.mjs --token ethereum
+node skills/coingecko-price/scripts/price.mjs --token bitcoin --json
+
+# Get price by contract address on a specific chain
+node skills/coingecko-price/scripts/price.mjs --contract 0xf3Ce5dDAAb6C133F9875a4a46C55cf0b58111B07 --chain base
+
+# Watch price with alerts (every 5 minutes)
+node skills/coingecko-price/scripts/watch.mjs --token ethereum --interval 300 --alert-above 4000 --alert-below 3000
+```
+
+**Supported chains:** `ethereum`, `base`, `polygon-pos`, `solana`, `arbitrum-one`
+**Rate limit:** ~30 requests/minute (no API key needed)
+
+---
+
 ## Installation
 
 Copy skills to your global or workspace skills directory:
@@ -146,6 +168,7 @@ cp -r skills/net-protocol ~/.clawdbot/skills/
 cp -r skills/tx-verify ~/.clawdbot/skills/
 cp -r skills/uniswap-v4-lp ~/.clawdbot/skills/
 cp -r skills/agent-security ~/.clawdbot/skills/
+cp -r skills/coingecko-price ~/.clawdbot/skills/
 
 # Or workspace installation
 cp -r skills/* ./skills/

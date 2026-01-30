@@ -24,6 +24,7 @@ Open-source skills for AI agents:
 | ✅ [tx-verify](./agent-tools/skills/tx-verify/) | Transaction verification patterns |
 | 🦄 [uniswap-v4-lp](./agent-tools/skills/uniswap-v4-lp/) | Uniswap V4 liquidity management on Base |
 | 🛡️ [agent-security](./agent-tools/skills/agent-security/) | Security guardrails, audit tools, secret scanner |
+| 📊 [coingecko-price](./agent-tools/skills/coingecko-price/) | Real-time crypto prices, alerts, market data |
 
 ### 🐦 [Scripts](./agent-tools/scripts/)
 
@@ -53,6 +54,7 @@ cp -r axiom-public/agent-tools/skills/net-protocol ~/.clawdbot/skills/
 cp -r axiom-public/agent-tools/skills/tx-verify ~/.clawdbot/skills/
 cp -r axiom-public/agent-tools/skills/uniswap-v4-lp ~/.clawdbot/skills/
 cp -r axiom-public/agent-tools/skills/agent-security ~/.clawdbot/skills/
+cp -r axiom-public/agent-tools/skills/coingecko-price ~/.clawdbot/skills/
 ```
 
 ## License
