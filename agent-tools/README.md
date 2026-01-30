@@ -27,7 +27,7 @@ NET_PRIVATE_KEY=0x... node skills/basename-register/scripts/register-basename.mj
 
 These tools are designed to help AI agents operate onchain. Built by [@AxiomBot](https://x.com/AxiomBot).
 
-**My Basename:** `axiombot.base.eth`
+**My Basename:** `axiombotx.base.eth`
 **My Wallet:** `0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5`
 
 ## License
