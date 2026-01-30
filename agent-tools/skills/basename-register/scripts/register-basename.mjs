@@ -6,7 +6,8 @@
  * Usage:
  *   node register-basename.mjs --check myname       # Check availability
  *   node register-basename.mjs myname               # Register for 1 year
- *   node register-basename.mjs myname --years 2    # Register for 2 years
+ *   node register-basename.mjs myname --years 2     # Register for 2 years
+ *   node register-basename.mjs --set-primary myname # Set as primary name
  * 
  * Environment:
  *   NET_PRIVATE_KEY - Your wallet private key (0x prefixed)
@@ -44,6 +45,18 @@ const ABI = [
     stateMutability: 'payable'
   },
   {
+    name: 'setReverseRecord',
+    type: 'function',
+    inputs: [
+      { name: 'name', type: 'string' },
+      { name: 'signatureExpiry', type: 'uint256' },
+      { name: 'coinTypes', type: 'uint256[]' },
+      { name: 'signature', type: 'bytes' }
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
     name: 'registerPrice',
     type: 'function',
     inputs: [
@@ -76,15 +89,18 @@ async function main() {
   
   if (args.length === 0) {
     console.log('Usage: register-basename.mjs [--check] <name> [--years N]');
+    console.log('       register-basename.mjs --set-primary <name>');
     console.log('');
     console.log('Examples:');
-    console.log('  register-basename.mjs --check myname    Check availability');
-    console.log('  register-basename.mjs myname            Register for 1 year');
-    console.log('  register-basename.mjs myname --years 2  Register for 2 years');
+    console.log('  register-basename.mjs --check myname      Check availability');
+    console.log('  register-basename.mjs myname              Register for 1 year');
+    console.log('  register-basename.mjs myname --years 2    Register for 2 years');
+    console.log('  register-basename.mjs --set-primary myname Set as primary name');
     process.exit(1);
   }
 
   const checkOnly = args.includes('--check');
+  const setPrimary = args.includes('--set-primary');
   const yearsIndex = args.indexOf('--years');
   const years = yearsIndex !== -1 ? parseInt(args[yearsIndex + 1]) : 1;
   const name = args.find(a => !a.startsWith('--') && a !== String(years));
@@ -98,6 +114,52 @@ async function main() {
     chain: base,
     transport: http('https://mainnet.base.org')
   });
+
+  // Handle --set-primary mode
+  if (setPrimary) {
+    const privateKey = process.env.NET_PRIVATE_KEY;
+    if (!privateKey) {
+      console.error('❌ NET_PRIVATE_KEY environment variable required');
+      process.exit(1);
+    }
+
+    const account = privateKeyToAccount(privateKey);
+    console.log(`Setting ${name}.base.eth as primary name for ${account.address}...`);
+
+    const walletClient = createWalletClient({
+      account,
+      chain: base,
+      transport: http('https://mainnet.base.org')
+    });
+
+    try {
+      const hash = await walletClient.writeContract({
+        address: REGISTRAR,
+        abi: ABI,
+        functionName: 'setReverseRecord',
+        args: [name, 0n, [], '0x']
+      });
+
+      console.log(`\nTransaction: ${hash}`);
+      console.log('Waiting for confirmation...');
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      
+      if (receipt.status === 'reverted') {
+        console.error('\n❌ Transaction reverted!');
+        console.log('Check: https://basescan.org/tx/' + hash);
+        process.exit(1);
+      }
+
+      console.log(`\n✅ Primary name set! Block: ${receipt.blockNumber}`);
+      console.log(`\nYour address now resolves to: ${name}.base.eth`);
+      console.log(`Verify: https://basescan.org/address/${account.address}`);
+    } catch (error) {
+      console.error('\n❌ Failed:', error.shortMessage || error.message);
+      process.exit(1);
+    }
+    return;
+  }
 
   // Check validity
   const isValid = await publicClient.readContract({
@@ -211,6 +273,9 @@ async function main() {
     console.log(`\nView: https://www.base.org/name/${name}`);
     console.log(`Profile: https://www.base.org/name/${name}`);
     console.log(`\nYou can now receive ETH at: ${name}.base.eth`);
+    
+    console.log(`\n💡 To set as your primary name (reverse record), run:`);
+    console.log(`   node register-basename.mjs --set-primary ${name}`);
   } catch (error) {
     console.error('\n❌ Registration failed:', error.shortMessage || error.message);
     process.exit(1);

@@ -87,7 +87,19 @@ node scripts/register-basename.mjs myname
 
 # Register for 2 years
 node scripts/register-basename.mjs myname --years 2
+
+# Set as your primary name (reverse record)
+node scripts/register-basename.mjs --set-primary myname
 ```
+
+## Two-Step Process
+
+1. **Register** - Mints the name to your wallet
+2. **Set Primary** - Makes your address resolve to that name
+
+The `--set-primary` command calls `setReverseRecord()` which links your address → name (so when someone looks up your address, they see your basename).
+
+> **Note:** Registration with `reverseRecord: true` should set this automatically, but if it doesn't work, use `--set-primary` separately.
 
 ## Common Errors
 
