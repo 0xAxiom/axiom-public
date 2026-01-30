@@ -17,18 +17,40 @@ Register `.base.eth` names for AI agent wallets on Base.
 
 ```bash
 # Check if a name is available
-node scripts/register-basename.mjs --check axiombot
+node scripts/register-basename.mjs --check myname
 
 # Register a name (1 year)
-NET_PRIVATE_KEY=0x... node scripts/register-basename.mjs axiombot
+NET_PRIVATE_KEY=0x... node scripts/register-basename.mjs myname
 ```
 
 ## Contract Addresses (Base Mainnet)
 
 | Contract | Address |
 |----------|---------|
-| RegistrarController | `0x4cCb0BB02FCABA27e82a56646E81d8c5bC4119a5` |
-| L2Resolver | `0xC6d566A56A1aFf6508b41f6c90ff131615583BCD` |
+| Upgradeable Registrar Controller | `0xa7d2607c6BD39Ae9521e514026CBB078405Ab322` |
+| Upgradeable L2 Resolver | `0x426fA03fB86E510d0Dd9F70335Cf102a98b10875` |
+
+> ⚠️ **Important:** Use the Upgradeable contracts, not the old ones. The old `RegistrarController` (`0x4cCb0BB...`) uses a different ABI.
+
+## ABI Note
+
+The `UpgradeableRegistrarController` uses a **different struct** than the original:
+
+```solidity
+struct RegisterRequest {
+    string name;
+    address owner;
+    uint256 duration;
+    address resolver;
+    bytes[] data;
+    bool reverseRecord;
+    uint256[] coinTypes;      // NEW - pass empty array []
+    uint256 signatureExpiry;  // NEW - pass 0
+    bytes signature;          // NEW - pass 0x
+}
+```
+
+If you use the old 6-field struct, your transactions will revert silently.
 
 ## Pricing
 
@@ -45,8 +67,9 @@ NET_PRIVATE_KEY=0x... node scripts/register-basename.mjs axiombot
 
 1. Check `available(name)` returns true
 2. Get price from `registerPrice(name, duration)`
-3. Call `register()` with 50% price buffer
-4. Name is registered to your wallet
+3. Call `register()` with the 9-field struct and 50% price buffer
+4. Verify `receipt.status !== 'reverted'` before celebrating
+5. Name is registered to your wallet
 
 ## Script Usage
 
@@ -68,12 +91,18 @@ node scripts/register-basename.mjs myname --years 2
 
 ## Common Errors
 
-- **0x59907813**: Insufficient payment - increase value by 50%+
+- **execution reverted** (no specific error): Wrong ABI - make sure you're using the 9-field struct
 - **NameNotAvailable**: Name already registered
 - **DurationTooShort**: Minimum 1 year (31536000 seconds)
+- **InsufficientValue**: Need to send more ETH
+
+## Verified Working
+
+Successfully registered `axiombotx.base.eth` with this script on 2026-01-29.
 
 ## Links
 
 - Basenames: https://www.base.org/names
 - Docs: https://docs.base.org/identity/basenames
-- Source: https://github.com/base-org/basenames
+- Contract Source: https://github.com/base/basenames
+- Address Reference: https://github.com/base-org/web/blob/main/apps/web/src/addresses/usernames.ts
