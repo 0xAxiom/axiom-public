@@ -54,6 +54,22 @@ const Actions = {
 
 const pad32 = (hex) => hex.replace('0x', '').padStart(64, '0');
 
+// Retry helper for rate-limited RPCs
+async function retry(fn, maxRetries = 3, delayMs = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      const isRateLimit = err.message?.includes('429') || err.message?.includes('rate limit');
+      if (!isRateLimit) throw err;
+      console.log(`   ⏳ Rate limited, retrying in ${delayMs / 1000}s... (${i + 1}/${maxRetries})`);
+      await new Promise(r => setTimeout(r, delayMs));
+      delayMs *= 2; // exponential backoff
+    }
+  }
+}
+
 async function compound(publicClient, walletClient, account) {
   const tokenId = argv.tokenId;
   console.log(`\n🔄 Auto-Compound — Position #${tokenId}`);
@@ -61,19 +77,21 @@ async function compound(publicClient, walletClient, account) {
   console.log(`Time: ${new Date().toISOString()}`);
 
   // Step 1: Get pool & position info
-  const [poolKey, posInfo] = await publicClient.readContract({
+  const [poolKey, posInfo] = await retry(() => publicClient.readContract({
     address: CONTRACTS.POSITION_MANAGER,
     abi: POSITION_MANAGER_ABI,
     functionName: 'getPoolAndPositionInfo',
     args: [BigInt(tokenId)],
-  });
+  }));
 
-  const liquidity = await publicClient.readContract({
+  await new Promise(r => setTimeout(r, 1000)); // small delay between calls
+
+  const liquidity = await retry(() => publicClient.readContract({
     address: CONTRACTS.POSITION_MANAGER,
     abi: POSITION_MANAGER_ABI,
     functionName: 'getPositionLiquidity',
     args: [BigInt(tokenId)],
-  });
+  }));
 
   console.log(`\n📊 Position Info:`);
   console.log(`   Pool: ${poolKey.currency0.slice(0,10)}.../${poolKey.currency1.slice(0,10)}...`);
@@ -86,19 +104,17 @@ async function compound(publicClient, walletClient, account) {
   }
 
   // Step 2: Check wallet balances before (to measure fees received)
-  const wethBefore = await publicClient.readContract({
-    address: CONTRACTS.WETH,
-    abi: [{ name: 'balanceOf', type: 'function', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }],
-    functionName: 'balanceOf',
-    args: [account.address],
-  });
+  const balanceAbi = [{ name: 'balanceOf', type: 'function', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }];
 
-  const token1Before = await publicClient.readContract({
-    address: poolKey.currency1,
-    abi: [{ name: 'balanceOf', type: 'function', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }],
-    functionName: 'balanceOf',
-    args: [account.address],
-  });
+  const wethBefore = await retry(() => publicClient.readContract({
+    address: CONTRACTS.WETH, abi: balanceAbi, functionName: 'balanceOf', args: [account.address],
+  }));
+
+  await new Promise(r => setTimeout(r, 500));
+
+  const token1Before = await retry(() => publicClient.readContract({
+    address: poolKey.currency1, abi: balanceAbi, functionName: 'balanceOf', args: [account.address],
+  }));
 
   console.log(`\n💰 Wallet Before:`);
   console.log(`   WETH:   ${formatEther(wethBefore)}`);
@@ -152,19 +168,15 @@ async function compound(publicClient, walletClient, account) {
   console.log('   ✅ Fees collected!');
 
   // Step 4: Check what we received
-  const wethAfter = await publicClient.readContract({
-    address: CONTRACTS.WETH,
-    abi: [{ name: 'balanceOf', type: 'function', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }],
-    functionName: 'balanceOf',
-    args: [account.address],
-  });
+  const wethAfter = await retry(() => publicClient.readContract({
+    address: CONTRACTS.WETH, abi: balanceAbi, functionName: 'balanceOf', args: [account.address],
+  }));
 
-  const token1After = await publicClient.readContract({
-    address: poolKey.currency1,
-    abi: [{ name: 'balanceOf', type: 'function', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }],
-    functionName: 'balanceOf',
-    args: [account.address],
-  });
+  await new Promise(r => setTimeout(r, 500));
+
+  const token1After = await retry(() => publicClient.readContract({
+    address: poolKey.currency1, abi: balanceAbi, functionName: 'balanceOf', args: [account.address],
+  }));
 
   const feesWeth = wethAfter - wethBefore;
   const feesToken1 = token1After - token1Before;
