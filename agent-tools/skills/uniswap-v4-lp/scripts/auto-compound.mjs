@@ -233,33 +233,32 @@ async function addFeesAsLiquidity(publicClient, walletClient, account, tokenId, 
 
   await sleep(1000);
 
-  // Proven pattern: INCREASE(0x00) + CLOSE_CURRENCY(0x11) — 2 actions
-  // CLOSE_CURRENCY safely handles settlement (pays negative deltas, takes positive ones)
-  // Verified on-chain: tx 0xa2f8...04f9 increased liquidity successfully
-  const addActionsHex = '0x0011';
+  // Proven pattern: INCREASE(0x00) + SETTLE_PAIR(0x0d) — 2 actions
+  // SETTLE_PAIR works for INCREASE (user pays tokens into pool)
+  // CLOSE_CURRENCY works for DECREASE (pool returns tokens to user)
+  // Verified on-chain: tx 0x9cf6...b377 compounded fees into position #1078695
+  const addActionsHex = '0x000d';
 
   const amount0Max = feesWeth > 0n ? feesWeth * 150n / 100n : 0n;
   const amount1Max = feesToken1 > 0n ? feesToken1 * 150n / 100n : 0n;
 
   // INCREASE_LIQUIDITY: tokenId, liquidity, amount0Max, amount1Max, hookData
-  const increaseParams = '0x' +
-    pad32('0x' + tokenId.toString(16)) +
-    pad32('0x' + newLiquidity.toString(16)) +
-    pad32('0x' + amount0Max.toString(16)) +
-    pad32('0x' + amount1Max.toString(16)) +
-    (5 * 32).toString(16).padStart(64, '0') +
-    '0'.padStart(64, '0');
+  const { defaultAbiCoder: abiCoder } = await import('@ethersproject/abi');
+  const increaseParams = abiCoder.encode(
+    ['uint256', 'uint256', 'uint128', 'uint128', 'bytes'],
+    [tokenId.toString(), newLiquidity.toString(), amount0Max.toString(), amount1Max.toString(), '0x']
+  );
 
-  // CLOSE_CURRENCY: both currencies + recipient
-  const closeParams = '0x' +
-    pad32(poolKey.currency0) +
-    pad32(poolKey.currency1) +
-    pad32(account.address);
+  // SETTLE_PAIR: (currency0, currency1)
+  const settleParams = abiCoder.encode(
+    ['address', 'address'],
+    [poolKey.currency0, poolKey.currency1]
+  );
 
   const { encodeAbiParameters, parseAbiParameters } = await import('viem');
   const addData = encodeAbiParameters(
     parseAbiParameters('bytes, bytes[]'),
-    [addActionsHex, [increaseParams, closeParams]]
+    [addActionsHex, [increaseParams, settleParams]]
   );
 
   const hash = await walletClient.writeContract({
