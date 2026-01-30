@@ -41,12 +41,12 @@ if (!privateKey) {
 const account = privateKeyToAccount(privateKey);
 const publicClient = createPublicClient({
   chain: base,
-  transport: http('https://mainnet.base.org'),
+  transport: http(process.env.BASE_RPC_URL || 'https://mainnet.base.org'),
 });
 const walletClient = createWalletClient({
   account,
   chain: base,
-  transport: http('https://mainnet.base.org'),
+  transport: http(process.env.BASE_RPC_URL || 'https://mainnet.base.org'),
 });
 
 console.log('🔥 Uniswap V4 - Burn Position');

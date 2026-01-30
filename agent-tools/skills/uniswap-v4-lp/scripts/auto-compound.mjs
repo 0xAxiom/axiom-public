@@ -46,7 +46,7 @@ const argv = yargs(hideBin(process.argv))
   .option('min-usd', { type: 'number', default: 5, description: '[dollar] Min USD value to trigger compound' })
   .option('min-gas-multiple', { type: 'number', default: 3, description: '[both] Fees must exceed Nx gas cost' })
   .option('force', { type: 'boolean', default: false, description: 'Skip all profitability checks' })
-  .option('rpc', { type: 'string', default: 'https://mainnet.base.org', description: 'Base RPC URL' })
+  .option('rpc', { type: 'string', default: process.env.BASE_RPC_URL || 'https://mainnet.base.org', description: 'Base RPC URL' })
   .parse();
 
 // ─── Constants ───────────────────────────────────────────────────────────────
