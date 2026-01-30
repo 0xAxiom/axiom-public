@@ -199,17 +199,17 @@ async function addFeesAsLiquidity(publicClient, walletClient, account, tokenId, 
 
   console.log(`   Liquidity to add: ${newLiquidity}`);
 
-  // Approve tokens (sequential, with nonce safety)
+  // Ensure tokens approved to Permit2 (V4 uses Permit2 for token transfers)
   if (feesWeth > 0n) {
     const allowance = await publicClient.readContract({
       address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'allowance',
-      args: [account.address, CONTRACTS.POSITION_MANAGER],
+      args: [account.address, CONTRACTS.PERMIT2],
     });
     if (allowance < feesWeth) {
-      console.log('   Approving WETH...');
+      console.log('   Approving WETH to Permit2...');
       const tx = await walletClient.writeContract({
         address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'approve',
-        args: [CONTRACTS.POSITION_MANAGER, maxUint256],
+        args: [CONTRACTS.PERMIT2, maxUint256],
       });
       await publicClient.waitForTransactionReceipt({ hash: tx });
     }
@@ -219,13 +219,13 @@ async function addFeesAsLiquidity(publicClient, walletClient, account, tokenId, 
     await sleep(1000);
     const allowance = await publicClient.readContract({
       address: poolKey.currency1, abi: ERC20_ABI, functionName: 'allowance',
-      args: [account.address, CONTRACTS.POSITION_MANAGER],
+      args: [account.address, CONTRACTS.PERMIT2],
     });
     if (allowance < feesToken1) {
-      console.log('   Approving Token1...');
+      console.log('   Approving Token1 to Permit2...');
       const tx = await walletClient.writeContract({
         address: poolKey.currency1, abi: ERC20_ABI, functionName: 'approve',
-        args: [CONTRACTS.POSITION_MANAGER, maxUint256],
+        args: [CONTRACTS.PERMIT2, maxUint256],
       });
       await publicClient.waitForTransactionReceipt({ hash: tx });
     }
@@ -233,27 +233,33 @@ async function addFeesAsLiquidity(publicClient, walletClient, account, tokenId, 
 
   await sleep(1000);
 
-  // INCREASE_LIQUIDITY(0x00) + SETTLE_PAIR(0x0d)
-  const addActionsHex = '0x' +
-    Actions.INCREASE_LIQUIDITY.toString(16).padStart(2, '0') +
-    Actions.SETTLE_PAIR.toString(16).padStart(2, '0');
+  // Proven pattern: INCREASE(0x00) + CLOSE_CURRENCY(0x11) — 2 actions
+  // CLOSE_CURRENCY safely handles settlement (pays negative deltas, takes positive ones)
+  // Verified on-chain: tx 0xa2f8...04f9 increased liquidity successfully
+  const addActionsHex = '0x0011';
 
   const amount0Max = feesWeth > 0n ? feesWeth * 150n / 100n : 0n;
   const amount1Max = feesToken1 > 0n ? feesToken1 * 150n / 100n : 0n;
 
-  const increaseParams = defaultAbiCoder.encode(
-    ['uint256', 'uint256', 'uint128', 'uint128', 'bytes'],
-    [tokenId.toString(), newLiquidity.toString(), amount0Max.toString(), amount1Max.toString(), '0x']
-  );
+  // INCREASE_LIQUIDITY: tokenId, liquidity, amount0Max, amount1Max, hookData
+  const increaseParams = '0x' +
+    pad32('0x' + tokenId.toString(16)) +
+    pad32('0x' + newLiquidity.toString(16)) +
+    pad32('0x' + amount0Max.toString(16)) +
+    pad32('0x' + amount1Max.toString(16)) +
+    (5 * 32).toString(16).padStart(64, '0') +
+    '0'.padStart(64, '0');
 
-  const settleParams = defaultAbiCoder.encode(
-    ['address', 'address'],
-    [poolKey.currency0, poolKey.currency1]
-  );
+  // CLOSE_CURRENCY: both currencies + recipient
+  const closeParams = '0x' +
+    pad32(poolKey.currency0) +
+    pad32(poolKey.currency1) +
+    pad32(account.address);
 
-  const addData = defaultAbiCoder.encode(
-    ['bytes', 'bytes[]'],
-    [addActionsHex, [increaseParams, settleParams]]
+  const { encodeAbiParameters, parseAbiParameters } = await import('viem');
+  const addData = encodeAbiParameters(
+    parseAbiParameters('bytes, bytes[]'),
+    [addActionsHex, [increaseParams, closeParams]]
   );
 
   const hash = await walletClient.writeContract({
@@ -321,10 +327,14 @@ async function compound(publicClient, walletClient, account) {
   }));
 
   // Extract tick range from posInfo
+  // V4 packs: poolId(25B) | tickLower(3B) | tickUpper(3B) | salt(1B) = 32B total
   const posInfoBN = BigInt(posInfo);
   const toInt24 = (v) => v >= 0x800000 ? v - 0x1000000 : v;
-  const tickLower = toInt24(Number((posInfoBN >> 32n) & 0xFFFFFFn));
-  const tickUpper = toInt24(Number((posInfoBN >> 8n) & 0xFFFFFFn));
+  const rawA = toInt24(Number((posInfoBN >> 32n) & 0xFFFFFFn));
+  const rawB = toInt24(Number((posInfoBN >> 8n) & 0xFFFFFFn));
+  // Ensure tickLower < tickUpper (V4 invariant)
+  const tickLower = Math.min(rawA, rawB);
+  const tickUpper = Math.max(rawA, rawB);
   console.log(`   Range: tick ${tickLower} → ${tickUpper} (current: ${currentTick})`);
 
   // 3. Wallet balances before
