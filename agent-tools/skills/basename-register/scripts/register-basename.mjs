@@ -17,7 +17,8 @@ import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 
 // Contract addresses on Base Mainnet
-const REGISTRAR = '0x4cCb0BB02FCABA27e82a56646E81d8c5bC4119a5';
+// NOTE: Use the Upgradeable Registrar Controller, not the old one!
+const REGISTRAR = '0xa7d2607c6BD39Ae9521e514026CBB078405Ab322';
 const RESOLVER = '0xC6d566A56A1aFf6508b41f6c90ff131615583BCD';
 
 const ABI = [
