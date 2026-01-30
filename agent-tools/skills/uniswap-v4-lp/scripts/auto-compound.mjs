@@ -2,14 +2,28 @@
 /**
  * Auto-compound V4 LP fees: collect → re-add as liquidity
  * 
- * Usage:
- *   node auto-compound.mjs --token-id 1078751                       # one-shot compound
- *   node auto-compound.mjs --token-id 1078751 --dry-run             # preview only
- *   node auto-compound.mjs --token-id 1078751 --loop --interval 3600  # loop mode
- *   node auto-compound.mjs --token-id 1078751 --min-usd 10          # min $10 to trigger
+ * Two strategies:
+ *   DOLLAR (default) — only compound when fees exceed a USD threshold
+ *   TIME             — compound on a fixed schedule, skip only if gas > fees
  * 
- * Gas-aware: only compounds when fees exceed a configurable USD threshold
- * AND a minimum multiple of gas cost (default 10x).
+ * Usage:
+ *   # One-shot (dollar strategy, default $5 min)
+ *   node auto-compound.mjs --token-id 1078751
+ *   
+ *   # One-shot with custom threshold
+ *   node auto-compound.mjs --token-id 1078751 --min-usd 20
+ *   
+ *   # Time-based loop: compound every 4 hours regardless of amount
+ *   node auto-compound.mjs --token-id 1078751 --strategy time --loop --interval 14400
+ *   
+ *   # Dollar-based loop: check hourly, only compound when fees > $50
+ *   node auto-compound.mjs --token-id 1078751 --strategy dollar --loop --interval 3600 --min-usd 50
+ *   
+ *   # Preview without executing
+ *   node auto-compound.mjs --token-id 1078751 --dry-run
+ * 
+ * Gas-aware: both strategies skip if fees < gas cost (no burning money).
+ * Dollar strategy adds a configurable USD floor on top.
  */
 
 import { createPublicClient, createWalletClient, http, formatEther, parseEther, maxUint256 } from 'viem';
@@ -25,12 +39,14 @@ dotenv.config({ path: resolve(process.env.HOME, '.axiom/wallet.env') });
 
 const argv = yargs(hideBin(process.argv))
   .option('token-id', { type: 'number', required: true, description: 'LP NFT token ID' })
+  .option('strategy', { type: 'string', choices: ['dollar', 'time'], default: 'dollar', description: 'Compound strategy' })
   .option('dry-run', { type: 'boolean', default: false, description: 'Preview fees without executing' })
   .option('loop', { type: 'boolean', default: false, description: 'Run continuously' })
   .option('interval', { type: 'number', default: 3600, description: 'Seconds between checks (loop mode)' })
-  .option('min-usd', { type: 'number', default: 5, description: 'Min USD value to trigger compound' })
-  .option('min-gas-multiple', { type: 'number', default: 10, description: 'Fees must exceed Nx gas cost' })
-  .option('force', { type: 'boolean', default: false, description: 'Skip profitability check' })
+  .option('min-usd', { type: 'number', default: 5, description: '[dollar] Min USD value to trigger compound' })
+  .option('min-gas-multiple', { type: 'number', default: 3, description: '[both] Fees must exceed Nx gas cost' })
+  .option('force', { type: 'boolean', default: false, description: 'Skip all profitability checks' })
+  .option('rpc', { type: 'string', default: 'https://mainnet.base.org', description: 'Base RPC URL' })
   .parse();
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -57,9 +73,7 @@ const Actions = {
   SWEEP: 0x13,
 };
 
-// ABI type strings (matching V4 SDK)
 const POOL_KEY_STRUCT = '(address,address,uint24,int24,address)';
-
 const Q96 = BigInt(2) ** BigInt(96);
 
 // ─── ABIs ────────────────────────────────────────────────────────────────────
@@ -84,67 +98,187 @@ const ERC20_ABI = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function tickToSqrtPriceX96(tick) {
-  const sqrtRatio = Math.sqrt(Math.pow(1.0001, tick));
-  return BigInt(Math.floor(sqrtRatio * Number(Q96)));
+  return BigInt(Math.floor(Math.sqrt(Math.pow(1.0001, tick)) * Number(Q96)));
 }
 
 function getLiquidityForAmounts(sqrtPriceX96, sqrtPriceA, sqrtPriceB, amount0, amount1) {
   if (sqrtPriceA > sqrtPriceB) [sqrtPriceA, sqrtPriceB] = [sqrtPriceB, sqrtPriceA];
-  
-  const liq0 = (amount0, sqrtA, sqrtB) => {
-    const intermediate = (sqrtA * sqrtB) / Q96;
-    return (amount0 * intermediate) / (sqrtB - sqrtA);
-  };
-  const liq1 = (amount1, sqrtA, sqrtB) => (amount1 * Q96) / (sqrtB - sqrtA);
+  const liq0 = (a0, sqrtA, sqrtB) => (a0 * ((sqrtA * sqrtB) / Q96)) / (sqrtB - sqrtA);
+  const liq1 = (a1, sqrtA, sqrtB) => (a1 * Q96) / (sqrtB - sqrtA);
 
-  if (sqrtPriceX96 <= sqrtPriceA) {
-    return liq0(amount0, sqrtPriceA, sqrtPriceB);
-  } else if (sqrtPriceX96 < sqrtPriceB) {
+  if (sqrtPriceX96 <= sqrtPriceA) return liq0(amount0, sqrtPriceA, sqrtPriceB);
+  if (sqrtPriceX96 < sqrtPriceB) {
     const l0 = liq0(amount0, sqrtPriceX96, sqrtPriceB);
     const l1 = liq1(amount1, sqrtPriceA, sqrtPriceX96);
     return l0 < l1 ? l0 : l1;
-  } else {
-    return liq1(amount1, sqrtPriceA, sqrtPriceB);
   }
+  return liq1(amount1, sqrtPriceA, sqrtPriceB);
 }
 
 async function retry(fn, maxRetries = 4, baseDelayMs = 2000) {
   let delay = baseDelayMs;
   for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (err) {
+    try { return await fn(); } catch (err) {
       if (i === maxRetries - 1) throw err;
-      const isRateLimit = err.message?.includes('429') || err.message?.includes('rate limit');
-      if (!isRateLimit) throw err;
+      if (!err.message?.includes('429') && !err.message?.includes('rate limit')) throw err;
       console.log(`   ⏳ Rate limited, retry ${i + 1}/${maxRetries} in ${delay / 1000}s...`);
-      await new Promise(r => setTimeout(r, delay));
+      await sleep(delay);
       delay *= 2;
     }
   }
 }
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const pad32 = (hex) => hex.replace('0x', '').padStart(64, '0');
 
 async function getEthPrice() {
   try {
-    const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006');
-    const data = await resp.json();
-    const pair = data.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDC');
-    if (pair) return parseFloat(pair.priceUsd);
-  } catch {}
-  return 3200; // fallback
+    const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006');
+    const d = await r.json();
+    const p = d.pairs?.find(p => p.chainId === 'base' && p.quoteToken?.symbol === 'USDC');
+    if (p) return parseFloat(p.priceUsd);
+  } catch {} return 3200;
 }
 
-// ─── Core ────────────────────────────────────────────────────────────────────
+async function getTokenPrice(address) {
+  try {
+    const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`);
+    const d = await r.json();
+    const p = d.pairs?.find(p => p.chainId === 'base');
+    if (p) return parseFloat(p.priceUsd);
+  } catch {} return 0;
+}
+
+// ─── Core: Collect Fees ──────────────────────────────────────────────────────
+
+async function collectFees(publicClient, walletClient, account, tokenId, poolKey) {
+  // Proven pattern: DECREASE(0x01) + CLOSE_CURRENCY(0x11)
+  // Verified on-chain: single CLOSE_CURRENCY resolves both token deltas
+  const collectActionsHex = '0x0111';
+
+  const decreaseParams = '0x' +
+    pad32('0x' + tokenId.toString(16)) +
+    '0'.padStart(64, '0') +     // liquidity = 0 (fees only)
+    '0'.padStart(64, '0') +     // amount0Min = 0
+    '0'.padStart(64, '0') +     // amount1Min = 0
+    (5 * 32).toString(16).padStart(64, '0') +
+    '0'.padStart(64, '0');      // hookData = empty
+
+  const closeParams = '0x' +
+    pad32(poolKey.currency0) +
+    pad32(poolKey.currency1) +
+    pad32(account.address);
+
+  const { encodeAbiParameters, parseAbiParameters } = await import('viem');
+  const collectData = encodeAbiParameters(
+    parseAbiParameters('bytes, bytes[]'),
+    [collectActionsHex, [decreaseParams, closeParams]]
+  );
+
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+  const hash = await walletClient.writeContract({
+    address: CONTRACTS.POSITION_MANAGER,
+    abi: POSITION_MANAGER_ABI,
+    functionName: 'modifyLiquidities',
+    args: [collectData, deadline],
+  });
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { hash, receipt, deadline };
+}
+
+// ─── Core: Add Liquidity ─────────────────────────────────────────────────────
+
+async function addFeesAsLiquidity(publicClient, walletClient, account, tokenId, poolKey, feesWeth, feesToken1, sqrtPriceX96, tickLower, tickUpper, deadline) {
+  // Calculate liquidity from fee amounts
+  const sqrtPriceLower = tickToSqrtPriceX96(tickLower);
+  const sqrtPriceUpper = tickToSqrtPriceX96(tickUpper);
+  const newLiquidity = getLiquidityForAmounts(sqrtPriceX96, sqrtPriceLower, sqrtPriceUpper, feesWeth, feesToken1);
+
+  if (newLiquidity <= 0n) return { success: false, reason: 'zero-liquidity' };
+
+  console.log(`   Liquidity to add: ${newLiquidity}`);
+
+  // Approve tokens (sequential, with nonce safety)
+  if (feesWeth > 0n) {
+    const allowance = await publicClient.readContract({
+      address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'allowance',
+      args: [account.address, CONTRACTS.POSITION_MANAGER],
+    });
+    if (allowance < feesWeth) {
+      console.log('   Approving WETH...');
+      const tx = await walletClient.writeContract({
+        address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'approve',
+        args: [CONTRACTS.POSITION_MANAGER, maxUint256],
+      });
+      await publicClient.waitForTransactionReceipt({ hash: tx });
+    }
+  }
+
+  if (feesToken1 > 0n) {
+    await sleep(1000);
+    const allowance = await publicClient.readContract({
+      address: poolKey.currency1, abi: ERC20_ABI, functionName: 'allowance',
+      args: [account.address, CONTRACTS.POSITION_MANAGER],
+    });
+    if (allowance < feesToken1) {
+      console.log('   Approving Token1...');
+      const tx = await walletClient.writeContract({
+        address: poolKey.currency1, abi: ERC20_ABI, functionName: 'approve',
+        args: [CONTRACTS.POSITION_MANAGER, maxUint256],
+      });
+      await publicClient.waitForTransactionReceipt({ hash: tx });
+    }
+  }
+
+  await sleep(1000);
+
+  // INCREASE_LIQUIDITY(0x00) + SETTLE_PAIR(0x0d)
+  const addActionsHex = '0x' +
+    Actions.INCREASE_LIQUIDITY.toString(16).padStart(2, '0') +
+    Actions.SETTLE_PAIR.toString(16).padStart(2, '0');
+
+  const amount0Max = feesWeth > 0n ? feesWeth * 150n / 100n : 0n;
+  const amount1Max = feesToken1 > 0n ? feesToken1 * 150n / 100n : 0n;
+
+  const increaseParams = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint128', 'uint128', 'bytes'],
+    [tokenId.toString(), newLiquidity.toString(), amount0Max.toString(), amount1Max.toString(), '0x']
+  );
+
+  const settleParams = defaultAbiCoder.encode(
+    ['address', 'address'],
+    [poolKey.currency0, poolKey.currency1]
+  );
+
+  const addData = defaultAbiCoder.encode(
+    ['bytes', 'bytes[]'],
+    [addActionsHex, [increaseParams, settleParams]]
+  );
+
+  const hash = await walletClient.writeContract({
+    address: CONTRACTS.POSITION_MANAGER,
+    abi: POSITION_MANAGER_ABI,
+    functionName: 'modifyLiquidities',
+    args: [addData, deadline],
+  });
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { success: receipt.status === 'success', hash, receipt, newLiquidity };
+}
+
+// ─── Core: Compound ──────────────────────────────────────────────────────────
 
 async function compound(publicClient, walletClient, account) {
   const tokenId = BigInt(argv.tokenId);
+  const strategy = argv.strategy;
+
   console.log(`\n🔄 Auto-Compound — Position #${argv.tokenId}`);
+  console.log(`📋 Strategy: ${strategy.toUpperCase()}`);
   console.log('═'.repeat(50));
   console.log(`Time: ${new Date().toISOString()}`);
 
-  // 1. Get pool & position info
+  // 1. Position info
   const [poolKey, posInfo] = await retry(() => publicClient.readContract({
     address: CONTRACTS.POSITION_MANAGER,
     abi: POSITION_MANAGER_ABI,
@@ -161,25 +295,22 @@ async function compound(publicClient, walletClient, account) {
   }));
 
   console.log(`\n📊 Position:`);
-  console.log(`   Pool: ${poolKey.currency0} / ${poolKey.currency1}`);
+  console.log(`   Pool: ${poolKey.currency0.slice(0,10)}... / ${poolKey.currency1.slice(0,10)}...`);
   console.log(`   Fee: ${poolKey.fee === 8388608 ? 'DYNAMIC' : poolKey.fee}`);
   console.log(`   Liquidity: ${liquidity.toString()}`);
 
   if (liquidity === 0n) {
-    console.log('⚠️  No liquidity — nothing to compound');
+    console.log('⚠️  No liquidity');
     return { compounded: false, reason: 'no-liquidity' };
   }
 
-  // 2. Get tick range from posInfo (packed as tickLower|tickUpper in the info)
-  // posInfo is the packed position info uint256
-  // We need the pool's poolId to get current tick
-  // Compute poolId from poolKey
+  // 2. Pool state (for price + tick range extraction)
   const poolId = defaultAbiCoder.encode(
     [POOL_KEY_STRUCT],
     [[poolKey.currency0, poolKey.currency1, poolKey.fee, poolKey.tickSpacing, poolKey.hooks]]
   );
-  const { keccak256: viemKeccak } = await import('viem');
-  const poolIdHash = viemKeccak(poolId);
+  const { keccak256 } = await import('viem');
+  const poolIdHash = keccak256(poolId);
   
   await sleep(800);
   const [sqrtPriceX96, currentTick] = await retry(() => publicClient.readContract({
@@ -188,10 +319,15 @@ async function compound(publicClient, walletClient, account) {
     functionName: 'getSlot0',
     args: [poolIdHash],
   }));
-  console.log(`   Current tick: ${currentTick}`);
-  console.log(`   sqrtPriceX96: ${sqrtPriceX96}`);
 
-  // 3. Record wallet balances BEFORE collecting
+  // Extract tick range from posInfo
+  const posInfoBN = BigInt(posInfo);
+  const toInt24 = (v) => v >= 0x800000 ? v - 0x1000000 : v;
+  const tickLower = toInt24(Number((posInfoBN >> 32n) & 0xFFFFFFn));
+  const tickUpper = toInt24(Number((posInfoBN >> 8n) & 0xFFFFFFn));
+  console.log(`   Range: tick ${tickLower} → ${tickUpper} (current: ${currentTick})`);
+
+  // 3. Wallet balances before
   await sleep(500);
   const wethBefore = await retry(() => publicClient.readContract({
     address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address],
@@ -201,70 +337,28 @@ async function compound(publicClient, walletClient, account) {
     address: poolKey.currency1, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address],
   }));
 
-  console.log(`\n💰 Wallet Before:`);
-  console.log(`   WETH:   ${formatEther(wethBefore)}`);
-  console.log(`   Token1: ${formatEther(token1Before)}`);
+  console.log(`\n💰 Wallet: WETH ${formatEther(wethBefore)} | Token1 ${formatEther(token1Before)}`);
 
   if (argv.dryRun) {
     console.log('\n✅ Dry run — would collect fees and re-add as liquidity');
-    console.log('   Run without --dry-run to execute');
     return { compounded: false, reason: 'dry-run' };
   }
 
-  // ─── Step 1: Collect fees ──────────────────────────────────────────────────
-  console.log('\n⏳ Step 1: Collecting fees...');
-
-  // Proven pattern: DECREASE(0x01) + CLOSE_CURRENCY(0x11)
-  // CLOSE_CURRENCY with currency0 address resolves both token deltas
-  // (V4 settles remaining deltas at end of unlock)
-  // Verified on-chain: tx 0xb000...8964 collected both WETH + AXIOM
-  const collectActionsHex = '0x0111';
-
-  const pad32 = (hex) => hex.replace('0x', '').padStart(64, '0');
-
-  // DECREASE_LIQUIDITY: tokenId, liquidity(0=fees only), amount0Min, amount1Min, hookData
-  const decreaseParams = '0x' +
-    pad32('0x' + tokenId.toString(16)) +  // tokenId
-    '0'.padStart(64, '0') +               // liquidity = 0
-    '0'.padStart(64, '0') +               // amount0Min = 0
-    '0'.padStart(64, '0') +               // amount1Min = 0
-    (5 * 32).toString(16).padStart(64, '0') +  // hookData offset
-    '0'.padStart(64, '0');                 // hookData length = 0
-
-  // CLOSE_CURRENCY: pass both currency addresses + recipient
-  // V4 reads first address as currency, ignores rest, and resolves ALL deltas
-  const closeParams = '0x' +
-    pad32(poolKey.currency0) +
-    pad32(poolKey.currency1) +
-    pad32(account.address);
-
-  const { encodeAbiParameters: viemEncode, parseAbiParameters: viemParse } = await import('viem');
-  const collectData = viemEncode(
-    viemParse('bytes, bytes[]'),
-    [collectActionsHex, [decreaseParams, closeParams]]
+  // ─── Step 1: Collect fees ────────────────────────────────────────────────
+  console.log('\n⏳ Collecting fees...');
+  const { hash: collectHash, receipt: collectReceipt, deadline } = await collectFees(
+    publicClient, walletClient, account, tokenId, poolKey
   );
-
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
-
-  const collectHash = await walletClient.writeContract({
-    address: CONTRACTS.POSITION_MANAGER,
-    abi: POSITION_MANAGER_ABI,
-    functionName: 'modifyLiquidities',
-    args: [collectData, deadline],
-  });
   console.log(`   TX: ${collectHash}`);
 
-  const collectReceipt = await publicClient.waitForTransactionReceipt({ hash: collectHash });
   if (collectReceipt.status !== 'success') {
-    console.error('❌ Fee collection tx reverted');
+    console.error('❌ Fee collection reverted');
     return { compounded: false, reason: 'collect-failed' };
   }
-  console.log('   ✅ Fees collected!');
-
-  // Wait for state to settle
+  console.log('   ✅ Collected!');
   await sleep(3000);
 
-  // ─── Step 2: Measure fees received ─────────────────────────────────────────
+  // ─── Step 2: Measure fees ────────────────────────────────────────────────
   const wethAfter = await retry(() => publicClient.readContract({
     address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address],
   }));
@@ -276,204 +370,99 @@ async function compound(publicClient, walletClient, account) {
   const feesWeth = wethAfter - wethBefore;
   const feesToken1 = token1After - token1Before;
 
-  console.log(`\n💸 Fees Received:`);
-  console.log(`   WETH:   ${formatEther(feesWeth)}`);
-  console.log(`   Token1: ${formatEther(feesToken1)}`);
+  console.log(`\n💸 Fees: WETH ${formatEther(feesWeth)} | Token1 ${formatEther(feesToken1)}`);
 
   if (feesWeth <= 0n && feesToken1 <= 0n) {
-    console.log('\n⚠️  No fees accrued. Nothing to compound.');
+    console.log('⚠️  No fees accrued');
     return { compounded: false, reason: 'no-fees', collectTx: collectHash };
   }
 
-  // ─── Step 3: Profitability check ───────────────────────────────────────────
-  const ethPrice = await getEthPrice();
+  // ─── Step 3: Strategy decision ───────────────────────────────────────────
+  const [ethPrice, token1Price] = await Promise.all([getEthPrice(), getTokenPrice(poolKey.currency1)]);
   const gasPrice = await retry(() => publicClient.getGasPrice());
-  const estimatedGas = 350000n; // approve(s) + increase liquidity
-  const gasCostWei = gasPrice * estimatedGas;
-  const gasCostUsd = (Number(gasCostWei) / 1e18) * ethPrice;
+  const gasCostUsd = (Number(gasPrice * 350000n) / 1e18) * ethPrice;
   const feesWethUsd = (Number(feesWeth) / 1e18) * ethPrice;
-
-  // Get token1 price for total USD calculation
-  let token1PriceUsd = 0;
-  try {
-    const resp2 = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${poolKey.currency1}`);
-    const data2 = await resp2.json();
-    const pair2 = data2.pairs?.find(p => p.chainId === 'base');
-    if (pair2) token1PriceUsd = parseFloat(pair2.priceUsd);
-  } catch {}
-  const feesToken1Usd = (Number(feesToken1) / 1e18) * token1PriceUsd;
+  const feesToken1Usd = (Number(feesToken1) / 1e18) * token1Price;
   const feesUsd = feesWethUsd + feesToken1Usd;
 
-  const minThreshold = Math.max(argv.minUsd, gasCostUsd * argv.minGasMultiple);
-
   console.log(`\n📊 Economics:`);
-  console.log(`   ETH price:  $${ethPrice.toFixed(0)}`);
-  console.log(`   Gas cost:   ~$${gasCostUsd.toFixed(4)}`);
-  console.log(`   Fees (WETH): ~$${feesWethUsd.toFixed(4)}`);
-  console.log(`   Fees (Token1): ~$${feesToken1Usd.toFixed(4)} (${token1PriceUsd > 0 ? '$' + token1PriceUsd.toFixed(8) + '/token' : 'price unknown'})`);
-  console.log(`   Fees total: ~$${feesUsd.toFixed(4)}`);
-  console.log(`   Threshold:  $${minThreshold.toFixed(2)} (max of $${argv.minUsd} or ${argv.minGasMultiple}x gas)`);
+  console.log(`   ETH:    $${ethPrice.toFixed(0)} | Token1: $${token1Price.toFixed(8)}`);
+  console.log(`   Fees:   $${feesUsd.toFixed(4)} (WETH $${feesWethUsd.toFixed(4)} + Token1 $${feesToken1Usd.toFixed(4)})`);
+  console.log(`   Gas:    ~$${gasCostUsd.toFixed(4)}`);
+  console.log(`   Strategy: ${strategy.toUpperCase()}`);
 
-  if (!argv.force && feesUsd < minThreshold) {
-    console.log(`\n⏸️  Fees ($${feesUsd.toFixed(2)}) below threshold ($${minThreshold.toFixed(2)}). Skipping re-add.`);
-    console.log('   Fees sit in wallet — will compound on next profitable run.');
-    console.log('   Use --force to override.');
-    return { compounded: false, reason: 'below-threshold', feesUsd, collectTx: collectHash };
-  }
+  let shouldCompound = argv.force;
 
-  console.log(`\n✅ Fees ($${feesUsd.toFixed(2)}) profitable — compounding!`);
+  if (!argv.force) {
+    // Both strategies: always skip if fees < gas cost × multiplier
+    const gasFloor = gasCostUsd * argv.minGasMultiple;
+    if (feesUsd < gasFloor) {
+      console.log(`\n⛽ Fees ($${feesUsd.toFixed(4)}) < ${argv.minGasMultiple}x gas ($${gasFloor.toFixed(4)}). Not worth it.`);
+      console.log('   Fees remain in wallet for next run.');
+      return { compounded: false, reason: 'below-gas-floor', feesUsd, collectTx: collectHash };
+    }
 
-  // ─── Step 4: Approve tokens to PositionManager ────────────────────────────
-  // Sequential approvals to avoid nonce race conditions
+    if (strategy === 'dollar') {
+      // Dollar strategy: also require min USD threshold
+      if (feesUsd < argv.minUsd) {
+        console.log(`\n💵 Fees ($${feesUsd.toFixed(4)}) < threshold ($${argv.minUsd}). Waiting for more.`);
+        console.log('   Fees remain in wallet — will compound when threshold is met.');
+        return { compounded: false, reason: 'below-usd-threshold', feesUsd, collectTx: collectHash };
+      }
+      console.log(`\n✅ DOLLAR: Fees ($${feesUsd.toFixed(2)}) ≥ $${argv.minUsd} threshold — compounding!`);
+      shouldCompound = true;
 
-  if (feesWeth > 0n) {
-    console.log('\n   Approving WETH...');
-    const allowance = await publicClient.readContract({
-      address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'allowance',
-      args: [account.address, CONTRACTS.POSITION_MANAGER],
-    });
-    if (allowance < feesWeth) {
-      const tx = await walletClient.writeContract({
-        address: CONTRACTS.WETH, abi: ERC20_ABI, functionName: 'approve',
-        args: [CONTRACTS.POSITION_MANAGER, maxUint256],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: tx });
-      console.log('   ✅ WETH approved');
-    } else {
-      console.log('   ✅ WETH already approved');
+    } else if (strategy === 'time') {
+      // Time strategy: compound if fees > gas floor (already checked above)
+      console.log(`\n✅ TIME: Fees ($${feesUsd.toFixed(4)}) > gas floor ($${gasFloor.toFixed(4)}) — compounding!`);
+      shouldCompound = true;
     }
   }
 
-  if (feesToken1 > 0n) {
-    console.log('   Approving Token1...');
-    await sleep(1000); // let nonce propagate
-    const allowance = await publicClient.readContract({
-      address: poolKey.currency1, abi: ERC20_ABI, functionName: 'allowance',
-      args: [account.address, CONTRACTS.POSITION_MANAGER],
-    });
-    if (allowance < feesToken1) {
-      const tx = await walletClient.writeContract({
-        address: poolKey.currency1, abi: ERC20_ABI, functionName: 'approve',
-        args: [CONTRACTS.POSITION_MANAGER, maxUint256],
-      });
-      await publicClient.waitForTransactionReceipt({ hash: tx });
-      console.log('   ✅ Token1 approved');
+  if (!shouldCompound) {
+    return { compounded: false, reason: 'strategy-skip', feesUsd, collectTx: collectHash };
+  }
+
+  // ─── Step 4: Re-add as liquidity ─────────────────────────────────────────
+  console.log('\n⏳ Re-adding fees as liquidity...');
+
+  const result = await addFeesAsLiquidity(
+    publicClient, walletClient, account, tokenId, poolKey,
+    feesWeth, feesToken1, sqrtPriceX96, tickLower, tickUpper, deadline
+  );
+
+  if (!result.success) {
+    if (result.reason === 'zero-liquidity') {
+      console.log('⚠️  Liquidity calc returned 0 — fees too small or position out of range');
+      console.log('   Fees remain in wallet.');
     } else {
-      console.log('   ✅ Token1 already approved');
+      console.error(`❌ Add liquidity failed: ${result.hash || 'no tx'}`);
     }
+    return { compounded: false, reason: result.reason, feesUsd, collectTx: collectHash };
   }
 
-  await sleep(1000);
+  const totalGas = collectReceipt.gasUsed + result.receipt.gasUsed;
+  console.log(`\n✅ Auto-compound complete!`);
+  console.log(`   WETH: ${formatEther(feesWeth)} | Token1: ${formatEther(feesToken1)}`);
+  console.log(`   Value: ~$${feesUsd.toFixed(4)}`);
+  console.log(`   Gas: ${totalGas} (~$${((Number(totalGas * gasPrice) / 1e18) * ethPrice).toFixed(4)})`);
+  console.log(`   https://basescan.org/tx/${result.hash}`);
 
-  // ─── Step 5: Calculate liquidity from fee amounts ─────────────────────────
-  // We need the position's tick range to calculate proper liquidity
-  // The posInfo uint256 contains tickLower and tickUpper packed
-  // For now, use the position's existing range by re-reading
-  // tickLower = int24(posInfo >> 232), tickUpper = int24(posInfo >> 208)
-  // Actually posInfo packing: first 160 bits = poolId prefix, then packed ticks
-  // Let's extract from the raw posInfo value
-  
-  // V4 PositionManager packs: poolId(25bytes=200bits) | tickLower(3bytes=24bits) | tickUpper(3bytes=24bits) | salt(1byte=8bits)
-  // Total = 256 bits
-  const posInfoBN = BigInt(posInfo);
-  const tickUpperRaw = Number((posInfoBN >> 8n) & 0xFFFFFFn);
-  const tickLowerRaw = Number((posInfoBN >> 32n) & 0xFFFFFFn);
-  
-  // Convert from uint24 to int24
-  const toInt24 = (v) => v >= 0x800000 ? v - 0x1000000 : v;
-  const tickLower = toInt24(tickLowerRaw);
-  const tickUpper = toInt24(tickUpperRaw);
-  
-  console.log(`\n📐 Position range: tick ${tickLower} → ${tickUpper}`);
-
-  const sqrtPriceLower = tickToSqrtPriceX96(tickLower);
-  const sqrtPriceUpper = tickToSqrtPriceX96(tickUpper);
-  const newLiquidity = getLiquidityForAmounts(sqrtPriceX96, sqrtPriceLower, sqrtPriceUpper, feesWeth, feesToken1);
-
-  if (newLiquidity <= 0n) {
-    console.log('⚠️  Calculated liquidity is 0 — fees may be too small or out of range');
-    return { compounded: false, reason: 'zero-liquidity', collectTx: collectHash };
-  }
-
-  console.log(`   New liquidity to add: ${newLiquidity}`);
-
-  // ─── Step 6: Increase liquidity ───────────────────────────────────────────
-  console.log('\n⏳ Step 2: Re-adding fees as liquidity...');
-
-  // Actions: INCREASE_LIQUIDITY(0x00) + SETTLE_PAIR(0x0d)
-  // Using same encoding approach as proven add-liquidity-v2.mjs
-  const addActionsHex = '0x' +
-    Actions.INCREASE_LIQUIDITY.toString(16).padStart(2, '0') +
-    Actions.SETTLE_PAIR.toString(16).padStart(2, '0');
-
-  // Add slippage buffer (50%) to max amounts
-  const amount0Max = feesWeth > 0n ? feesWeth * 150n / 100n : 0n;
-  const amount1Max = feesToken1 > 0n ? feesToken1 * 150n / 100n : 0n;
-
-  // INCREASE_LIQUIDITY: (PoolKey, tokenId, liquidity, amount0Max, amount1Max, hookData)
-  // Use ethersproject encoding (proven in add-liquidity-v2.mjs)
-  const increaseParams = defaultAbiCoder.encode(
-    ['uint256', 'uint256', 'uint128', 'uint128', 'bytes'],
-    [tokenId.toString(), newLiquidity.toString(), amount0Max.toString(), amount1Max.toString(), '0x']
-  );
-
-  // SETTLE_PAIR: (currency0, currency1)
-  const settleParams = defaultAbiCoder.encode(
-    ['address', 'address'],
-    [poolKey.currency0, poolKey.currency1]
-  );
-
-  const addData = defaultAbiCoder.encode(
-    ['bytes', 'bytes[]'],
-    [addActionsHex, [increaseParams, settleParams]]
-  );
-
-  try {
-    const addHash = await walletClient.writeContract({
-      address: CONTRACTS.POSITION_MANAGER,
-      abi: POSITION_MANAGER_ABI,
-      functionName: 'modifyLiquidities',
-      args: [addData, deadline],
-    });
-    console.log(`   TX: ${addHash}`);
-
-    const addReceipt = await publicClient.waitForTransactionReceipt({ hash: addHash });
-
-    if (addReceipt.status === 'success') {
-      const totalGas = collectReceipt.gasUsed + addReceipt.gasUsed;
-      console.log(`\n✅ Auto-compound complete!`);
-      console.log(`   Fees → liquidity in position #${argv.tokenId}`);
-      console.log(`   WETH compounded: ${formatEther(feesWeth)}`);
-      console.log(`   Token1 compounded: ${formatEther(feesToken1)}`);
-      console.log(`   Total gas: ${totalGas}`);
-      console.log(`   https://basescan.org/tx/${addHash}`);
-      return { compounded: true, feesUsd, collectTx: collectHash, addTx: addHash, gas: totalGas };
-    } else {
-      console.error('❌ Increase liquidity tx reverted. Fees remain in wallet.');
-      console.error(`   https://basescan.org/tx/${addHash}`);
-      return { compounded: false, reason: 'add-reverted', collectTx: collectHash, addTx: addHash };
-    }
-  } catch (err) {
-    console.error(`❌ Increase liquidity failed: ${err.shortMessage || err.message}`);
-    console.error('   Fees collected but not re-added — they sit in wallet.');
-    return { compounded: false, reason: 'add-error', error: err.message, collectTx: collectHash };
-  }
+  return { compounded: true, feesUsd, collectTx: collectHash, addTx: result.hash, gas: totalGas };
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   const privateKey = process.env.NET_PRIVATE_KEY || process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    console.error('❌ No private key found in ~/.axiom/wallet.env');
-    process.exit(1);
-  }
+  if (!privateKey) { console.error('❌ No private key in ~/.axiom/wallet.env'); process.exit(1); }
 
   const account = privateKeyToAccount(privateKey);
-  const publicClient = createPublicClient({ chain: base, transport: http('https://mainnet.base.org') });
-  const walletClient = createWalletClient({ account, chain: base, transport: http('https://mainnet.base.org') });
+  const publicClient = createPublicClient({ chain: base, transport: http(argv.rpc) });
+  const walletClient = createWalletClient({ account, chain: base, transport: http(argv.rpc) });
 
   console.log(`Wallet: ${account.address}`);
+  console.log(`Strategy: ${argv.strategy.toUpperCase()}`);
 
   // Verify ownership
   const owner = await retry(() => publicClient.readContract({
@@ -489,31 +478,36 @@ async function main() {
   }
 
   if (argv.loop) {
-    console.log(`\n🔁 Loop mode — checking every ${argv.interval}s`);
-    console.log(`   Compound when fees > $${argv.minUsd} AND > ${argv.minGasMultiple}x gas cost`);
-    console.log(`   Use Ctrl+C to stop\n`);
+    const stratDesc = argv.strategy === 'dollar'
+      ? `compound when fees ≥ $${argv.minUsd} AND ≥ ${argv.minGasMultiple}x gas`
+      : `compound every ${argv.interval}s if fees ≥ ${argv.minGasMultiple}x gas`;
 
-    let runs = 0;
-    let totalCompounded = 0;
+    console.log(`\n🔁 Loop mode — checking every ${argv.interval}s`);
+    console.log(`   ${stratDesc}`);
+    console.log(`   Ctrl+C to stop\n`);
+
+    let runs = 0, compounds = 0, totalFeesUsd = 0;
+
     while (true) {
       runs++;
-      console.log(`\n━━━ Run #${runs} ━━━`);
+      console.log(`\n${'━'.repeat(50)}\n  Run #${runs} | ${new Date().toLocaleString()}\n${'━'.repeat(50)}`);
       try {
         const result = await compound(publicClient, walletClient, account);
-        if (result.compounded) totalCompounded++;
-        console.log(`\n📈 Stats: ${totalCompounded}/${runs} runs compounded`);
+        if (result.compounded) {
+          compounds++;
+          totalFeesUsd += result.feesUsd || 0;
+        }
+        console.log(`\n📈 ${compounds}/${runs} compounded | ~$${totalFeesUsd.toFixed(2)} total`);
       } catch (err) {
         console.error(`\n❌ Error: ${err.message}`);
       }
-      console.log(`\n⏰ Next check in ${argv.interval}s...`);
+      console.log(`⏰ Next: ${new Date(Date.now() + argv.interval * 1000).toLocaleTimeString()}`);
       await sleep(argv.interval * 1000);
     }
   } else {
     try {
       const result = await compound(publicClient, walletClient, account);
-      if (!result.compounded) {
-        console.log(`\nResult: ${result.reason}`);
-      }
+      if (!result.compounded) console.log(`\nResult: ${result.reason}`);
     } catch (err) {
       console.error(`\n❌ Fatal: ${err.message}`);
       process.exit(1);
