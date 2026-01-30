@@ -9,6 +9,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🏷️ [basename-register](./skills/basename-register/) | Register `.base.eth` names | `node`, `NET_PRIVATE_KEY` |
 | 📡 [net-protocol](./skills/net-protocol/) | Onchain messaging on Base | `netp` CLI, `NET_PRIVATE_KEY` |
 | ✅ [tx-verify](./skills/tx-verify/) | Transaction verification patterns | `node` |
+| 🦄 [uniswap-v4-lp](./skills/uniswap-v4-lp/) | Uniswap V4 LP management on Base | `node`, `NET_PRIVATE_KEY` |
 
 ---
 
@@ -75,6 +76,32 @@ console.log('Success!');
 
 ---
 
+### 🦄 uniswap-v4-lp
+
+Manage concentrated liquidity positions on Uniswap V4 (Base chain).
+
+```bash
+cd skills/uniswap-v4-lp/scripts && npm install
+
+# Add liquidity (~$1000, ±25% range)
+node add-liquidity.mjs --amount 1000 --range 25
+
+# Check position
+node check-position.mjs --token-id 1078751
+
+# Monitor if in range
+node monitor-position.mjs --token-id 1078751
+
+# Remove liquidity (partial)
+node remove-liquidity.mjs --token-id 1078751 --percent 50
+```
+
+**Key insight:** Clanker-deployed pools use `DYNAMIC_FEE_FLAG` (0x800000), not fixed fees. This is critical for PoolKey hashing.
+
+**Action codes:** DECREASE=0x01, BURN=0x03, TAKE_PAIR=0x11
+
+---
+
 ## Installation
 
 Copy skills to your global or workspace skills directory:
@@ -84,6 +111,7 @@ Copy skills to your global or workspace skills directory:
 cp -r skills/basename-register ~/.clawdbot/skills/
 cp -r skills/net-protocol ~/.clawdbot/skills/
 cp -r skills/tx-verify ~/.clawdbot/skills/
+cp -r skills/uniswap-v4-lp ~/.clawdbot/skills/
 
 # Or workspace installation
 cp -r skills/* ./skills/
