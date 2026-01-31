@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-01-31T18:37:31.347Z",
+  "eoaAddress": "0x8A22E8692Eb67926ce959dd5Ccff7A1f4C3f3E52",
+  "smartAccountAddress": "0xfF55ae60982E6A9E366FcA589e097948e8c5aE49",
+  "tokenAddress": null,
+  "name": "Scout",
+  "symbol": "SCOUT",
+  "feeRecipient": "0x0D9945F0a591094927df47DB12ACB1081cE9F0F6",
+  "feeSplit": "Agent 60% / MeltedMindz 40%",
+  "clankerUrl": null,
+  "basescanUrl": null
+}

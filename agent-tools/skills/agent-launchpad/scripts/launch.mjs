@@ -18,7 +18,7 @@
 
 import { CdpClient } from "@coinbase/cdp-sdk";
 import { getTickFromMarketCap, WETH_ADDRESSES, POOL_POSITIONS, PoolPositions, FEE_CONFIGS, FeeConfigs, CLANKERS, clankerConfigFor, ClankerDeployments } from "clanker-sdk";
-import { createWalletClient, createPublicClient, http, encodeFunctionData, zeroAddress } from "viem";
+import { createWalletClient, createPublicClient, http, encodeFunctionData, zeroAddress, keccak256, toHex } from "viem";
 import { base } from "viem/chains";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { homedir } from "os";
@@ -194,7 +194,7 @@ async function createWallet(cdp) {
 // ═══════════════════════════════════════════════════════════════
 // NOTE: This function is WIP/broken - basename registration is temporarily disabled
 
-async function registerBasename(cdp, smartAccount, name) {
+async function registerBasename(cdp, smartAccount, name, paymasterUrl) {
   const label = name.toLowerCase().replace(/[^a-z0-9-]/g, "");
   const fullName = `${label}.base.eth`;
 
@@ -241,8 +241,9 @@ async function registerBasename(cdp, smartAccount, name) {
 
     // Send via smart account user operation (gasless via paymaster)
     const sendResult = await cdp.evm.sendUserOperation({
-      smartAccount: smartAccount, // The smart account object (not just address)
+      smartAccount: smartAccount,
       network: "base",
+      paymasterUrl,
       calls: [{
         to: BASENAME_REGISTRAR,
         data: registerData,
@@ -334,7 +335,7 @@ async function processImageUrl(imageArg) {
 // Step 3: Launch Token via Clanker
 // ═══════════════════════════════════════════════════════════════
 
-async function launchToken(cdp, smartAccount, opts) {
+async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
   // Process image URL (upload if local file)
   const imageUrl = await processImageUrl(opts.image);
 
@@ -368,23 +369,24 @@ async function launchToken(cdp, smartAccount, opts) {
         tokenAdmin: smartAccount.address,
         name: opts.name,
         symbol: opts.symbol,
-        salt: "0x" + "00".repeat(32),
+        salt: keccak256(toHex(`${opts.name}-${opts.symbol}-${Date.now()}-${Math.random()}`)),
         image: imageUrl || "",
         metadata: JSON.stringify({
           description: opts.description,
           launchedBy: "Agent Launchpad by MeltedMindz",
           agentWallet: smartAccount.address,
         }),
-        context: "Launched via Agent Launchpad",
+        context: JSON.stringify({ interface: "agent-launchpad", platform: "meltedmindz" }),
         originatingChainId: 8453n,
       },
-      // PoolConfig
+      // PoolConfig — uses feeStaticHookV2 (the standard hook for Clanker V4 pools)
       poolConfig: {
-        hook: clankerConfig.related.feeDynamicHook, // Dynamic fee hook
+        hook: clankerConfig.related.feeStaticHookV2,
         pairedToken: WETH_ADDRESSES[8453],
         tickIfToken0IsClanker: tickInfo.tickIfToken0IsClanker,
-        tickSpacing: feeConfig?.tickSpacing || 200, // SDK returns undefined, fallback 200 is correct for Standard pool positions
-        poolData: "0x", // Hook initialization data
+        tickSpacing: 200,
+        // poolData encodes the static fee hook config (10000 bps = 1% fee each direction)
+        poolData: "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000027100000000000000000000000000000000000000000000000000000000000002710",
       },
       // LockerConfig — reward recipients go here as parallel arrays
       lockerConfig: {
@@ -395,14 +397,15 @@ async function launchToken(cdp, smartAccount, opts) {
         tickLower: poolPositions.map(p => p.tickLower),
         tickUpper: poolPositions.map(p => p.tickUpper),
         positionBps: poolPositions.map(p => p.positionBps),
-        lockerData: "0x",
+        // lockerData encodes position config (offset, size, reward_recipient_count per position, ...)
+        lockerData: "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
       },
-      // MevModuleConfig — no MEV protection for now
+      // MevModuleConfig — V2 MEV protection (standard for all Clanker V4 deploys)
       mevModuleConfig: {
-        mevModule: zeroAddress,
-        mevModuleData: "0x",
+        mevModule: clankerConfig.related.mevModuleV2,
+        mevModuleData: "0x00000000000000000000000000000000000000000000000000000000000a2c99000000000000000000000000000000000000000000000000000000000000a2c9000000000000000000000000000000000000000000000000000000000000000f",
       },
-      // ExtensionConfig[] — no extensions
+      // No extensions (no devbuy/airdrop)
       extensionConfigs: [],
     };
 
@@ -415,8 +418,9 @@ async function launchToken(cdp, smartAccount, opts) {
 
     // Send via CDP smart account (gasless via paymaster)
     const sendResult = await cdp.evm.sendUserOperation({
-      smartAccount: smartAccount, // The smart account object (not just address)
-      network: "base", 
+      smartAccount: smartAccount,
+      network: "base",
+      paymasterUrl,
       calls: [{
         to: clankerConfig.address,
         data: deployData,
@@ -519,6 +523,25 @@ async function main() {
     } catch { /* wallet.env not found, that's ok */ }
   }
 
+  // Load paymaster URL (required for gasless smart account txs)
+  let paymasterUrl = process.env.CDP_PAYMASTER_URL;
+  if (!paymasterUrl) {
+    try {
+      const credPaths = [
+        join(homedir(), ".agent-launchpad", "credentials.env"),
+        join(homedir(), ".axiom", "wallet.env"),
+        join(process.cwd(), "credentials.env"),
+      ];
+      for (const p of credPaths) {
+        try {
+          const f = readFileSync(p, "utf-8");
+          const m = f.match(/CDP_PAYMASTER_URL="([^"]+)"/);
+          if (m) { paymasterUrl = m[1]; break; }
+        } catch {}
+      }
+    } catch {}
+  }
+
   if (!apiKeyId || !apiKeySecret) {
     console.error("❌ Missing CDP credentials. Set CDP_API_KEY_ID and CDP_API_KEY_SECRET.");
     console.error("   See README.md for setup instructions.");
@@ -536,11 +559,11 @@ async function main() {
   // Step 2: Register basename (optional) - TEMPORARILY DISABLED
   let basenameResult = { basename: null };
   // if (opts.basename) {
-  //   basenameResult = await registerBasename(cdp, smartAccount, opts.name);
+  //   basenameResult = await registerBasename(cdp, smartAccount, opts.name, paymasterUrl);
   // }
 
   // Step 3: Launch token (uses CDP smart account for gasless tx)
-  const tokenResult = await launchToken(cdp, smartAccount, opts);
+  const tokenResult = await launchToken(cdp, smartAccount, opts, paymasterUrl);
 
   // ── Summary ──
   console.log(`

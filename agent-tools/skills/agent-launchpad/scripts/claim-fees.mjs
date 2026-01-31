@@ -119,7 +119,24 @@ function loadCdpCreds() {
     } catch { /* not found */ }
   }
 
-  return { apiKeyId, apiKeySecret, walletSecret };
+  // Load paymaster URL
+  let paymasterUrl = process.env.CDP_PAYMASTER_URL;
+  if (!paymasterUrl) {
+    const credPaths = [
+      join(homedir(), ".agent-launchpad", "credentials.env"),
+      join(homedir(), ".axiom", "wallet.env"),
+      join(process.cwd(), "credentials.env"),
+    ];
+    for (const p of credPaths) {
+      try {
+        const f = readFileSync(p, "utf-8");
+        const m = f.match(/CDP_PAYMASTER_URL="([^"]+)"/);
+        if (m) { paymasterUrl = m[1]; break; }
+      } catch {}
+    }
+  }
+
+  return { apiKeyId, apiKeySecret, walletSecret, paymasterUrl };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -230,6 +247,7 @@ async function main() {
       const result = await cdp.evm.sendUserOperation({
         smartAccount: smartAccount,
         network: "base",
+        paymasterUrl: creds.paymasterUrl,
         calls: [{
           to: FEE_LOCKER,
           data: claimData,
@@ -261,6 +279,7 @@ async function main() {
       const result = await cdp.evm.sendUserOperation({
         smartAccount: smartAccount,
         network: "base",
+        paymasterUrl: creds.paymasterUrl,
         calls: [{
           to: FEE_LOCKER,
           data: claimData,
