@@ -1,3 +1,4 @@
 node_modules/
 test-cdp.mjs
 test-key.mjs
+launch-*.json

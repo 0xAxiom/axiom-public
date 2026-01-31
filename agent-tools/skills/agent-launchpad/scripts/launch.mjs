@@ -335,7 +335,7 @@ async function processImageUrl(imageArg) {
 // Step 3: Launch Token via Clanker
 // ═══════════════════════════════════════════════════════════════
 
-async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
+async function launchToken(cdp, eoaAccount, opts) {
   // Process image URL (upload if local file)
   const imageUrl = await processImageUrl(opts.image);
 
@@ -347,27 +347,23 @@ async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
       transport: http(),
     });
 
-    // Use the high-level Clanker SDK to build the deploy transaction
-    // This handles all V4 config encoding (hooks, poolData, lockerData, mevModule, salt)
-    const { Clanker } = await import("clanker-sdk/v4");
-
-    // Create a dummy wallet client (we only need getDeployTransaction, not deploy)
-    const dummyAccount = (await import("viem/accounts")).privateKeyToAccount(
-      "0x0000000000000000000000000000000000000000000000000000000000000001"
-    );
-    const dummyWallet = createWalletClient({
-      account: dummyAccount,
+    // CDP's EOA account implements viem's LocalAccount interface (signMessage, signTransaction, sign)
+    // This lets us use it directly as a viem wallet signer — no ERC-4337 overhead
+    const walletClient = createWalletClient({
+      account: eoaAccount,
       chain: base,
       transport: http(),
     });
 
-    const clanker = new Clanker({ publicClient, wallet: dummyWallet });
+    // Use the high-level Clanker SDK v4 for deployment
+    const { Clanker } = await import("clanker-sdk/v4");
+    const clanker = new Clanker({ publicClient, wallet: walletClient });
 
-    // Build the deploy transaction using the SDK
-    const txData = await clanker.getDeployTransaction({
+    // Deploy the token using the SDK (handles all V4 config internally)
+    const { txHash, waitForTransaction, error } = await clanker.deploy({
       name: opts.name,
       symbol: opts.symbol,
-      tokenAdmin: smartAccount.address,
+      tokenAdmin: eoaAccount.address,
       image: imageUrl || "",
       metadata: {
         description: opts.description || "",
@@ -383,8 +379,8 @@ async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
       rewards: {
         recipients: [
           {
-            recipient: smartAccount.address,
-            admin: smartAccount.address,
+            recipient: eoaAccount.address,
+            admin: eoaAccount.address,
             bps: 6000, // Agent 60%
             token: "Both",
           },
@@ -398,52 +394,12 @@ async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
       },
     });
 
-    const expectedTokenAddress = txData.expectedAddress;
-    if (expectedTokenAddress) {
-      console.log(`   📍 Predicted token: ${truncAddr(expectedTokenAddress)}`);
-    }
+    if (error) throw error;
 
-    // Encode the calldata from the SDK's transaction data
-    const deployData = encodeFunctionData({
-      abi: txData.abi,
-      functionName: txData.functionName,
-      args: txData.args,
-    });
-
-    // Send via CDP smart account (gasless via paymaster)
-    const sendResult = await cdp.evm.sendUserOperation({
-      smartAccount: smartAccount,
-      network: "base",
-      paymasterUrl,
-      calls: [{
-        to: txData.address,
-        data: deployData,
-        value: BigInt(txData.value || 0),
-      }],
-    });
-
-    // Wait for user operation to be confirmed and get the actual transaction hash
-    const waitResult = await cdp.evm.waitForUserOperation({
-      smartAccount,
-      userOpHash: sendResult.userOpHash
-    });
-
-    const txHash = waitResult?.transactionHash;
     done(truncAddr(txHash));
     console.log(`   ⏳ Waiting for confirmation...`);
 
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-
-    // Extract token address from TokenCreated event or Transfer event
-    let tokenAddress = null;
-    for (const log of receipt.logs) {
-      // Transfer event from token minting (first Transfer from 0x0 is token creation)
-      if (log.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" &&
-          log.topics[1] === "0x0000000000000000000000000000000000000000000000000000000000000000") {
-        tokenAddress = log.address;
-        break;
-      }
-    }
+    const { address: tokenAddress } = await waitForTransaction();
 
     if (tokenAddress) {
       console.log(`   ✅ Token deployed: ${tokenAddress}`);
@@ -456,9 +412,9 @@ async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
   } catch (error) {
     fail(`${error.message?.slice(0, 80) || "deployment failed"}`);
 
-    if (error.message?.includes("insufficient") || error.message?.includes("gas")) {
-      console.log(`   ℹ️  The smart account may need ETH on Base for the Clanker deployment`);
-      console.log(`   ℹ️  Fund ${smartAccount.address} with ~0.01 ETH on Base`);
+    if (error.message?.includes("insufficient") || error.message?.includes("gas") || error.message?.includes("funds")) {
+      console.log(`   ℹ️  The EOA needs ETH on Base for gas (~0.005 ETH)`);
+      console.log(`   ℹ️  Fund ${eoaAccount.address} with ~0.01 ETH on Base`);
     }
 
     return { tokenAddress: null, error: error.message };
@@ -547,37 +503,38 @@ async function main() {
   if (walletSecret) cdpOpts.walletSecret = walletSecret;
   const cdp = new CdpClient(cdpOpts);
 
-  // Step 1: Create wallet
-  const { eoaAccount, smartAccount } = await createWallet(cdp);
+  // Step 1: Create EOA wallet (CDP server-managed key)
+  step("📦", "Creating wallet...");
+  const eoaAccount = await cdp.evm.createAccount();
+  done(truncAddr(eoaAccount.address));
 
-  // Step 2: Register basename (optional) - TEMPORARILY DISABLED
-  let basenameResult = { basename: null };
-  // if (opts.basename) {
-  //   basenameResult = await registerBasename(cdp, smartAccount, opts.name, paymasterUrl);
-  // }
+  // Check ETH balance
+  const publicClient = createPublicClient({ chain: base, transport: http() });
+  const balance = await publicClient.getBalance({ address: eoaAccount.address });
+  if (balance === 0n) {
+    console.log(`   ⚠️  Wallet has 0 ETH. Needs ~0.005 ETH for gas on Base.`);
+    console.log(`   💰 Fund ${eoaAccount.address} then re-run, or use --fund to auto-fund.`);
+  }
 
-  // Step 3: Launch token (uses CDP smart account for gasless tx)
-  const tokenResult = await launchToken(cdp, smartAccount, opts, paymasterUrl);
+  // Step 2: Launch token (direct EOA tx via Clanker SDK — no ERC-4337 overhead)
+  const tokenResult = await launchToken(cdp, eoaAccount, opts);
 
   // ── Summary ──
   console.log(`
 ── Summary ────────────────────────────────
-  EOA:       ${eoaAccount.address}
-  Wallet:    ${smartAccount.address}${basenameResult.basename ? `\n  Name:      ${basenameResult.basename}` : ""}${tokenResult.tokenAddress ? `\n  Token:     ${tokenResult.tokenAddress}` : ""}${tokenResult.txHash ? `\n  Tx:        https://basescan.org/tx/${tokenResult.txHash}` : ""}${tokenResult.tokenAddress ? `\n  Trade:     https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : ""}
+  Wallet:    ${eoaAccount.address}${tokenResult.tokenAddress ? `\n  Token:     ${tokenResult.tokenAddress}` : ""}${tokenResult.txHash ? `\n  Tx:        https://basescan.org/tx/${tokenResult.txHash}` : ""}${tokenResult.tokenAddress ? `\n  Trade:     https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : ""}
   Fee split: Agent 60% | MeltedMindz 40%
-  Basename registration coming soon
 ───────────────────────────────────────────
 
-💡 Save your EOA address — it owns the smart account.
-   The smart account address is your agent's onchain identity.
+💡 Save your wallet address — this is your agent's onchain identity.
+   CDP manages the private key server-side.
 ${tokenResult.tokenAddress ? `\n🎉 $${opts.symbol} is live! Share the Clanker link above.` : ""}
 `);
 
   // Save launch data to JSON file for state persistence
   const output = {
     timestamp: new Date().toISOString(),
-    eoaAddress: eoaAccount.address,
-    smartAccountAddress: smartAccount.address,
+    walletAddress: eoaAccount.address,
     tokenAddress: tokenResult.tokenAddress,
     txHash: tokenResult.txHash,
     name: opts.name,
