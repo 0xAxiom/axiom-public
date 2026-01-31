@@ -12,8 +12,8 @@
   "author": "MeltedMindz",
   "license": "MIT",
   "dependencies": {
-    "@coinbase/cdp-sdk": "^1.44.0",
-    "clanker-sdk": "^4.2.10",
-    "viem": "^2.45.1"
+    "@coinbase/cdp-sdk": "1.44.0",
+    "clanker-sdk": "4.2.10",
+    "viem": "2.45.1"
   }
 }

@@ -54,6 +54,7 @@ function parseArgs() {
   return {
     token: get("token"),
     wallet: get("wallet"),
+    eoaKey: get("eoa-key"),
     dryRun: args.includes("--dry-run"),
     help: args.includes("--help") || args.includes("-h"),
   };
@@ -67,13 +68,14 @@ function showHelp() {
 Claim accumulated LP fee rewards from Clanker for your agent token.
 
 Usage:
-  node claim-fees.mjs --token <TOKEN_ADDRESS> --wallet <SMART_ACCOUNT_ADDRESS>
+  node claim-fees.mjs --token <TOKEN_ADDRESS> --wallet <SMART_ACCOUNT_ADDRESS> --eoa-key <PRIVATE_KEY>
 
 Options:
-  --token    Token contract address (required)
-  --wallet   Agent's smart account address (required)
-  --dry-run  Check fees without claiming
-  --help     Show this help
+  --token     Token contract address (required)
+  --wallet    Agent's smart account address (required)
+  --eoa-key   EOA private key that owns the smart account (required for claiming)
+  --dry-run   Check fees without claiming
+  --help      Show this help
 
 Environment:
   CDP_API_KEY_ID, CDP_API_KEY_SECRET, CDP_WALLET_SECRET
@@ -121,6 +123,11 @@ async function main() {
   if (opts.help || !opts.token || !opts.wallet) {
     showHelp();
     process.exit(opts.help ? 0 : 1);
+  }
+
+  if (!opts.dryRun && !opts.eoaKey) {
+    console.error("\n❌ EOA private key required for claiming (use --eoa-key or --dry-run)");
+    process.exit(1);
   }
 
   const publicClient = createPublicClient({
@@ -195,6 +202,12 @@ async function main() {
   if (creds.walletSecret) cdpOpts.walletSecret = creds.walletSecret;
   const cdp = new CdpClient(cdpOpts);
 
+  // Reconstruct the smart account from the EOA private key
+  const eoaAccount = await cdp.evm.createAccountFromPrivateKey(opts.eoaKey);
+  const smartAccount = await cdp.evm.createSmartAccount({
+    owner: eoaAccount,
+  });
+
   // Claim WETH fees
   if (wethFees > 0n) {
     console.log(`\n   💰 Claiming ${formatEther(wethFees)} WETH...`);
@@ -205,17 +218,22 @@ async function main() {
         args: [walletAddress, WETH],
       });
 
-      const result = await cdp.evm.sendTransaction({
-        address: walletAddress,
-        transaction: {
+      const result = await cdp.evm.sendUserOperation({
+        smartAccount: smartAccount,
+        network: "base",
+        calls: [{
           to: FEE_LOCKER,
           data: claimData,
           value: 0n,
-        },
-        network: "base",
+        }],
       });
 
-      console.log(`   ✅ WETH claimed! Tx: ${result?.transactionHash}`);
+      const waitResult = await cdp.evm.waitForUserOperation({
+        smartAccount,
+        userOpHash: result.userOpHash
+      });
+
+      console.log(`   ✅ WETH claimed! Tx: ${waitResult?.transactionHash}`);
     } catch (e) {
       console.log(`   ❌ WETH claim failed: ${e.message?.slice(0, 80)}`);
     }
@@ -231,17 +249,22 @@ async function main() {
         args: [walletAddress, tokenAddress],
       });
 
-      const result = await cdp.evm.sendTransaction({
-        address: walletAddress,
-        transaction: {
+      const result = await cdp.evm.sendUserOperation({
+        smartAccount: smartAccount,
+        network: "base",
+        calls: [{
           to: FEE_LOCKER,
           data: claimData,
           value: 0n,
-        },
-        network: "base",
+        }],
       });
 
-      console.log(`   ✅ $${tokenSymbol} claimed! Tx: ${result?.transactionHash}`);
+      const waitResult = await cdp.evm.waitForUserOperation({
+        smartAccount,
+        userOpHash: result.userOpHash
+      });
+
+      console.log(`   ✅ $${tokenSymbol} claimed! Tx: ${waitResult?.transactionHash}`);
     } catch (e) {
       console.log(`   ❌ Token claim failed: ${e.message?.slice(0, 80)}`);
     }

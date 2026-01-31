@@ -20,7 +20,7 @@ import { CdpClient } from "@coinbase/cdp-sdk";
 import { getTickFromMarketCap, WETH_ADDRESSES, POOL_POSITIONS, PoolPositions, FEE_CONFIGS, FeeConfigs, CLANKERS, clankerConfigFor, ClankerDeployments } from "clanker-sdk";
 import { createWalletClient, createPublicClient, http, encodeFunctionData, zeroAddress } from "viem";
 import { base } from "viem/chains";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
@@ -191,6 +191,7 @@ async function createWallet(cdp) {
 // ═══════════════════════════════════════════════════════════════
 // Step 2: Register Basename (Optional)
 // ═══════════════════════════════════════════════════════════════
+// NOTE: This function is WIP/broken - basename registration is temporarily disabled
 
 async function registerBasename(cdp, smartAccount, name) {
   const label = name.toLowerCase().replace(/[^a-z0-9-]/g, "");
@@ -238,18 +239,24 @@ async function registerBasename(cdp, smartAccount, name) {
     const value = (price * 110n) / 100n;
 
     // Send via smart account user operation (gasless via paymaster)
-    const sendResult = await cdp.evm.sendTransaction({
-      address: smartAccount.address,
-      transaction: {
+    const sendResult = await cdp.evm.sendUserOperation({
+      smartAccount: smartAccount, // The smart account object (not just address)
+      network: "base",
+      calls: [{
         to: BASENAME_REGISTRAR,
         data: registerData,
         value,
-      },
-      network: "base",
+      }],
+    });
+
+    // Wait for user operation to be confirmed and get the actual transaction hash
+    const waitResult = await cdp.evm.waitForUserOperation({
+      smartAccount,
+      userOpHash: sendResult.userOpHash
     });
 
     done(`${fullName} (gas sponsored)`);
-    return { basename: fullName, txHash: sendResult?.transactionHash };
+    return { basename: fullName, txHash: waitResult?.transactionHash };
   } catch (error) {
     // Basename registration can fail for many reasons (taken, needs funds, etc.)
     fail(`${fullName} — ${error.message?.slice(0, 60) || "failed"}`);
@@ -309,7 +316,7 @@ async function launchToken(cdp, smartAccount, opts) {
         hook: clankerConfig.related.feeDynamicHook, // Dynamic fee hook
         pairedToken: WETH_ADDRESSES[8453],
         tickIfToken0IsClanker: tickInfo.tickIfToken0IsClanker,
-        tickSpacing: feeConfig?.tickSpacing || 200,
+        tickSpacing: feeConfig?.tickSpacing || 200, // SDK returns undefined, fallback 200 is correct for Standard pool positions
         poolData: "0x", // Hook initialization data
       },
       // LockerConfig — reward recipients go here as parallel arrays
@@ -340,17 +347,23 @@ async function launchToken(cdp, smartAccount, opts) {
     });
 
     // Send via CDP smart account (gasless via paymaster)
-    const sendResult = await cdp.evm.sendTransaction({
-      address: smartAccount.address,
-      transaction: {
+    const sendResult = await cdp.evm.sendUserOperation({
+      smartAccount: smartAccount, // The smart account object (not just address)
+      network: "base", 
+      calls: [{
         to: clankerConfig.address,
         data: deployData,
         value: 0n,
-      },
-      network: "base",
+      }],
     });
 
-    const txHash = sendResult?.transactionHash;
+    // Wait for user operation to be confirmed and get the actual transaction hash
+    const waitResult = await cdp.evm.waitForUserOperation({
+      smartAccount,
+      userOpHash: sendResult.userOpHash
+    });
+
+    const txHash = waitResult?.transactionHash;
     done(truncAddr(txHash));
     console.log(`   ⏳ Waiting for confirmation...`);
 
@@ -443,11 +456,11 @@ async function main() {
   // Step 1: Create wallet
   const { eoaAccount, smartAccount } = await createWallet(cdp);
 
-  // Step 2: Register basename (optional)
+  // Step 2: Register basename (optional) - TEMPORARILY DISABLED
   let basenameResult = { basename: null };
-  if (opts.basename) {
-    basenameResult = await registerBasename(cdp, smartAccount, opts.name);
-  }
+  // if (opts.basename) {
+  //   basenameResult = await registerBasename(cdp, smartAccount, opts.name);
+  // }
 
   // Step 3: Launch token (uses CDP smart account for gasless tx)
   const tokenResult = await launchToken(cdp, smartAccount, opts);
@@ -458,12 +471,32 @@ async function main() {
   EOA:       ${eoaAccount.address}
   Wallet:    ${smartAccount.address}${basenameResult.basename ? `\n  Name:      ${basenameResult.basename}` : ""}${tokenResult.tokenAddress ? `\n  Token:     ${tokenResult.tokenAddress}` : ""}${tokenResult.txHash ? `\n  Tx:        https://basescan.org/tx/${tokenResult.txHash}` : ""}${tokenResult.tokenAddress ? `\n  Trade:     https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : ""}
   Fee split: Agent 60% | MeltedMindz 40%
+  Basename registration coming soon
 ───────────────────────────────────────────
 
 💡 Save your EOA address — it owns the smart account.
    The smart account address is your agent's onchain identity.
 ${tokenResult.tokenAddress ? `\n🎉 $${opts.symbol} is live! Share the Clanker link above.` : ""}
 `);
+
+  // Save launch data to JSON file for state persistence
+  const output = {
+    timestamp: new Date().toISOString(),
+    eoaAddress: eoaAccount.address,
+    smartAccountAddress: smartAccount.address,
+    tokenAddress: tokenResult.tokenAddress,
+    txHash: tokenResult.txHash,
+    name: opts.name,
+    symbol: opts.symbol,
+    feeRecipient: MELTEDMINDZ_ADDRESS,
+    feeSplit: "Agent 60% / MeltedMindz 40%",
+    clankerUrl: tokenResult.tokenAddress ? `https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : null,
+    basescanUrl: tokenResult.txHash ? `https://basescan.org/tx/${tokenResult.txHash}` : null,
+  };
+  
+  const filename = `launch-${opts.symbol.toLowerCase()}-${Date.now()}.json`;
+  writeFileSync(filename, JSON.stringify(output, null, 2));
+  console.log(`\n📄 Launch data saved to ${filename}`);
 }
 
 main().catch((error) => {
