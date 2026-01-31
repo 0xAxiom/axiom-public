@@ -17,8 +17,7 @@
  */
 
 import { CdpClient } from "@coinbase/cdp-sdk";
-import { getTickFromMarketCap, WETH_ADDRESSES, POOL_POSITIONS, PoolPositions, FEE_CONFIGS, FeeConfigs, CLANKERS, clankerConfigFor, ClankerDeployments } from "clanker-sdk";
-import { createWalletClient, createPublicClient, http, encodeFunctionData, zeroAddress, keccak256, toHex } from "viem";
+import { createPublicClient, http, encodeFunctionData } from "viem";
 import { base } from "viem/chains";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { homedir } from "os";
@@ -187,105 +186,6 @@ function done(text) {
 
 function fail(text) {
   console.log(`❌ ${text}`);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Step 1: Create Smart Wallet
-// ═══════════════════════════════════════════════════════════════
-
-async function createWallet(cdp) {
-  step("📦", "Creating smart wallet...");
-
-  // Create an EOA (server-managed key)
-  const eoaAccount = await cdp.evm.createAccount();
-
-  // Create an ERC-4337 smart account owned by the EOA
-  const smartAccount = await cdp.evm.createSmartAccount({
-    owner: eoaAccount,
-  });
-
-  done(truncAddr(smartAccount.address));
-
-  return { eoaAccount, smartAccount };
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Step 2: Register Basename (Optional)
-// ═══════════════════════════════════════════════════════════════
-// NOTE: This function is WIP/broken - basename registration is temporarily disabled
-
-async function registerBasename(cdp, smartAccount, name, paymasterUrl) {
-  const label = name.toLowerCase().replace(/[^a-z0-9-]/g, "");
-  const fullName = `${label}.base.eth`;
-
-  step("🏷️ ", `Registering ${fullName}...`);
-
-  try {
-    // Build the registration calldata
-    const registerData = encodeFunctionData({
-      abi: REGISTRAR_ABI,
-      functionName: "register",
-      args: [
-        {
-          name: label,
-          owner: smartAccount.address,
-          duration: ONE_YEAR,
-          resolver: BASENAME_RESOLVER,
-          data: [],
-          reverseRecord: true,
-        },
-      ],
-    });
-
-    // Get the registration price
-    const publicClient = createPublicClient({
-      chain: base,
-      transport: http(),
-    });
-
-    let price;
-    try {
-      price = await publicClient.readContract({
-        address: BASENAME_REGISTRAR,
-        abi: REGISTRAR_ABI,
-        functionName: "registerPrice",
-        args: [label, ONE_YEAR],
-      });
-    } catch {
-      // Default to ~0.001 ETH if price check fails
-      price = 1000000000000000n; // 0.001 ETH
-    }
-
-    // Add 10% buffer for price fluctuation
-    const value = (price * 110n) / 100n;
-
-    // Send via smart account user operation (gasless via paymaster)
-    const sendResult = await cdp.evm.sendUserOperation({
-      smartAccount: smartAccount,
-      network: "base",
-      paymasterUrl,
-      calls: [{
-        to: BASENAME_REGISTRAR,
-        data: registerData,
-        value,
-      }],
-    });
-
-    // Wait for user operation to be confirmed and get the actual transaction hash
-    const waitResult = await cdp.evm.waitForUserOperation({
-      smartAccount,
-      userOpHash: sendResult.userOpHash
-    });
-
-    done(`${fullName} (gas sponsored)`);
-    return { basename: fullName, txHash: waitResult?.transactionHash };
-  } catch (error) {
-    // Basename registration can fail for many reasons (taken, needs funds, etc.)
-    fail(`${fullName} — ${error.message?.slice(0, 60) || "failed"}`);
-    console.log(`   ℹ️  The smart account may need ETH for the name registration fee`);
-    console.log(`   ℹ️  Fund ${smartAccount.address} with ~0.002 ETH on Base`);
-    return { basename: null, error: error.message };
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -536,6 +436,12 @@ async function main() {
   if (!apiKeyId || !apiKeySecret) {
     console.error("❌ Missing CDP credentials. Set CDP_API_KEY_ID and CDP_API_KEY_SECRET.");
     console.error("   See README.md for setup instructions.");
+    process.exit(1);
+  }
+
+  if (!paymasterUrl) {
+    console.error("❌ Missing CDP_PAYMASTER_URL. Required for gasless transactions.");
+    console.error("   Get it from portal.cdp.coinbase.com → Paymaster & Bundler.");
     process.exit(1);
   }
 
