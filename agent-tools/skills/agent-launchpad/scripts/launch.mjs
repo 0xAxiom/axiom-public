@@ -28,7 +28,7 @@ import { join } from "path";
 // Constants
 // ═══════════════════════════════════════════════════════════════
 
-const MELTEDMINDZ_ADDRESS = "0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5";
+const MELTEDMINDZ_ADDRESS = "0x0D9945F0a591094927df47DB12ACB1081cE9F0F6"; // Hardware wallet
 const BASENAME_REGISTRAR = "0xd3e6775ed9b7dc12b205c8e608dc3767b9e5efda";
 const BASENAME_RESOLVER = "0xC6d566A56A1aFf6508b41f6c90ff131615583BCD"; // Base L2 resolver
 const ONE_YEAR = 31557600n; // seconds
