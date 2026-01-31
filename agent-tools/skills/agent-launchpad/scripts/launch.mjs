@@ -347,73 +347,67 @@ async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
       transport: http(),
     });
 
-    // Get the Clanker V4 deployment config for Base (chainId 8453)
-    const clankerConfig = CLANKERS["clanker_v4"];
+    // Use the high-level Clanker SDK to build the deploy transaction
+    // This handles all V4 config encoding (hooks, poolData, lockerData, mevModule, salt)
+    const { Clanker } = await import("clanker-sdk/v4");
 
-    if (!clankerConfig) {
-      throw new Error("Clanker V4 config not found for Base");
+    // Create a dummy wallet client (we only need getDeployTransaction, not deploy)
+    const dummyAccount = (await import("viem/accounts")).privateKeyToAccount(
+      "0x0000000000000000000000000000000000000000000000000000000000000001"
+    );
+    const dummyWallet = createWalletClient({
+      account: dummyAccount,
+      chain: base,
+      transport: http(),
+    });
+
+    const clanker = new Clanker({ publicClient, wallet: dummyWallet });
+
+    // Build the deploy transaction using the SDK
+    const txData = await clanker.getDeployTransaction({
+      name: opts.name,
+      symbol: opts.symbol,
+      tokenAdmin: smartAccount.address,
+      image: imageUrl || "",
+      metadata: {
+        description: opts.description || "",
+        socialMediaUrls: [],
+        auditUrls: [],
+      },
+      context: {
+        interface: "agent-launchpad",
+        platform: "meltedmindz",
+        messageId: "",
+        id: "",
+      },
+      rewards: {
+        recipients: [
+          {
+            recipient: smartAccount.address,
+            admin: smartAccount.address,
+            bps: 6000, // Agent 60%
+            token: "Both",
+          },
+          {
+            recipient: MELTEDMINDZ_ADDRESS,
+            admin: MELTEDMINDZ_ADDRESS,
+            bps: 4000, // MeltedMindz 40%
+            token: "Both",
+          },
+        ],
+      },
+    });
+
+    const expectedTokenAddress = txData.expectedAddress;
+    if (expectedTokenAddress) {
+      console.log(`   📍 Predicted token: ${truncAddr(expectedTokenAddress)}`);
     }
 
-    // Calculate pool tick for target market cap
-    const tickInfo = getTickFromMarketCap(opts.marketCap);
-
-    // Get pool positions and fee config from SDK
-    const poolPositions = POOL_POSITIONS[PoolPositions.Standard];
-    const feeConfig = FEE_CONFIGS[FeeConfigs.DynamicBasic];
-
-    // Build the V4 DeploymentConfig struct matching the contract ABI:
-    // DeploymentConfig = { TokenConfig, PoolConfig, LockerConfig, MevModuleConfig, ExtensionConfig[] }
-    const deploymentConfig = {
-      // TokenConfig
-      tokenConfig: {
-        tokenAdmin: smartAccount.address,
-        name: opts.name,
-        symbol: opts.symbol,
-        salt: keccak256(toHex(`${opts.name}-${opts.symbol}-${Date.now()}-${Math.random()}`)),
-        image: imageUrl || "",
-        metadata: JSON.stringify({
-          description: opts.description,
-          launchedBy: "Agent Launchpad by MeltedMindz",
-          agentWallet: smartAccount.address,
-        }),
-        context: JSON.stringify({ interface: "agent-launchpad", platform: "meltedmindz" }),
-        originatingChainId: 8453n,
-      },
-      // PoolConfig — uses feeStaticHookV2 (the standard hook for Clanker V4 pools)
-      poolConfig: {
-        hook: clankerConfig.related.feeStaticHookV2,
-        pairedToken: WETH_ADDRESSES[8453],
-        tickIfToken0IsClanker: tickInfo.tickIfToken0IsClanker,
-        tickSpacing: 200,
-        // poolData encodes the static fee hook config (10000 bps = 1% fee each direction)
-        poolData: "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000027100000000000000000000000000000000000000000000000000000000000002710",
-      },
-      // LockerConfig — reward recipients go here as parallel arrays
-      lockerConfig: {
-        locker: clankerConfig.related.locker,
-        rewardAdmins: [smartAccount.address, MELTEDMINDZ_ADDRESS],
-        rewardRecipients: [smartAccount.address, MELTEDMINDZ_ADDRESS],
-        rewardBps: [6000, 4000], // Agent 60%, MeltedMindz 40%
-        tickLower: poolPositions.map(p => p.tickLower),
-        tickUpper: poolPositions.map(p => p.tickUpper),
-        positionBps: poolPositions.map(p => p.positionBps),
-        // lockerData encodes position config (offset, size, reward_recipient_count per position, ...)
-        lockerData: "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-      },
-      // MevModuleConfig — V2 MEV protection (standard for all Clanker V4 deploys)
-      mevModuleConfig: {
-        mevModule: clankerConfig.related.mevModuleV2,
-        mevModuleData: "0x00000000000000000000000000000000000000000000000000000000000a2c99000000000000000000000000000000000000000000000000000000000000a2c9000000000000000000000000000000000000000000000000000000000000000f",
-      },
-      // No extensions (no devbuy/airdrop)
-      extensionConfigs: [],
-    };
-
-    // Encode the deployToken calldata
+    // Encode the calldata from the SDK's transaction data
     const deployData = encodeFunctionData({
-      abi: clankerConfig.abi,
-      functionName: "deployToken",
-      args: [deploymentConfig],
+      abi: txData.abi,
+      functionName: txData.functionName,
+      args: txData.args,
     });
 
     // Send via CDP smart account (gasless via paymaster)
@@ -422,9 +416,9 @@ async function launchToken(cdp, smartAccount, opts, paymasterUrl) {
       network: "base",
       paymasterUrl,
       calls: [{
-        to: clankerConfig.address,
+        to: txData.address,
         data: deployData,
-        value: 0n,
+        value: BigInt(txData.value || 0),
       }],
     });
 
