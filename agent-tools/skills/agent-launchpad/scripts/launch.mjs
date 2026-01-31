@@ -20,9 +20,10 @@ import { CdpClient } from "@coinbase/cdp-sdk";
 import { getTickFromMarketCap, WETH_ADDRESSES, POOL_POSITIONS, PoolPositions, FEE_CONFIGS, FeeConfigs, CLANKERS, clankerConfigFor, ClankerDeployments } from "clanker-sdk";
 import { createWalletClient, createPublicClient, http, encodeFunctionData, zeroAddress } from "viem";
 import { base } from "viem/chains";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { homedir } from "os";
-import { join } from "path";
+import { join, dirname, resolve } from "path";
+import { spawn } from "child_process";
 
 // ═══════════════════════════════════════════════════════════════
 // Constants
@@ -267,10 +268,76 @@ async function registerBasename(cdp, smartAccount, name) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Image Upload Helper
+// ═══════════════════════════════════════════════════════════════
+
+async function processImageUrl(imageArg) {
+  // If empty or already a URL, return as-is
+  if (!imageArg || imageArg.startsWith('http://') || imageArg.startsWith('https://')) {
+    return imageArg;
+  }
+
+  // Check if it's a local file path
+  const resolvedPath = resolve(imageArg);
+  if (existsSync(resolvedPath)) {
+    step("📤", "Uploading image...");
+    
+    try {
+      // Get the script directory relative to this file
+      const scriptDir = dirname(new URL(import.meta.url).pathname);
+      const uploadScriptPath = join(scriptDir, 'upload-image.mjs');
+      
+      // Upload the image using our upload script
+      const uploadResult = await new Promise((resolve, reject) => {
+        const child = spawn('node', [uploadScriptPath, '--file', resolvedPath], {
+          stdio: ['inherit', 'pipe', 'pipe']
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        child.on('close', (code) => {
+          if (code === 0) {
+            resolve(stdout.trim());
+          } else {
+            reject(new Error(`Upload failed: ${stderr.trim() || 'Unknown error'}`));
+          }
+        });
+
+        child.on('error', (err) => {
+          reject(new Error(`Failed to start upload script: ${err.message}`));
+        });
+      });
+
+      done(uploadResult);
+      return uploadResult;
+    } catch (error) {
+      fail(`Upload failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // If it's neither a URL nor a valid file path, return as-is
+  // (might be a placeholder or future URL format)
+  return imageArg;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Step 3: Launch Token via Clanker
 // ═══════════════════════════════════════════════════════════════
 
 async function launchToken(cdp, smartAccount, opts) {
+  // Process image URL (upload if local file)
+  const imageUrl = await processImageUrl(opts.image);
+
   step("🚀", `Launching $${opts.symbol}...`);
 
   try {
@@ -302,7 +369,7 @@ async function launchToken(cdp, smartAccount, opts) {
         name: opts.name,
         symbol: opts.symbol,
         salt: "0x" + "00".repeat(32),
-        image: opts.image || "",
+        image: imageUrl || "",
         metadata: JSON.stringify({
           description: opts.description,
           launchedBy: "Agent Launchpad by MeltedMindz",
