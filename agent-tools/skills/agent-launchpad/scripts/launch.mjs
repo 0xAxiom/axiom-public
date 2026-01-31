@@ -35,11 +35,11 @@ const BANKR_FEE_ADDRESS = "0xF60633D02690e2A15A54AB919925F3d038Df163e";    // Ba
 const AGENT_BPS = 6000;    // Agent: 60%
 const PROTOCOL_BPS = 2000; // Axiom protocol: 20%
 const BANKR_BPS = 2000;    // Bankr: 20%
-const BASENAME_REGISTRAR = "0xd3e6775ed9b7dc12b205c8e608dc3767b9e5efda";
-const BASENAME_RESOLVER = "0xC6d566A56A1aFf6508b41f6c90ff131615583BCD"; // Base L2 resolver
+const BASENAME_REGISTRAR = "0xa7d2607c6BD39Ae9521e514026CBB078405Ab322"; // UpgradeableRegistrarController
+const BASENAME_RESOLVER = "0x426fA03fB86E510d0Dd9F70335Cf102a98b10875"; // Upgradeable L2 Resolver
 const ONE_YEAR = 31557600n; // seconds
 
-// Basename registrar ABI (just the register function)
+// Basename registrar ABI (UpgradeableRegistrarController)
 const REGISTRAR_ABI = [
   {
     name: "register",
@@ -56,6 +56,9 @@ const REGISTRAR_ABI = [
           { name: "resolver", type: "address" },
           { name: "data", type: "bytes[]" },
           { name: "reverseRecord", type: "bool" },
+          { name: "coinTypes", type: "uint256[]" },
+          { name: "signatureExpiry", type: "uint256" },
+          { name: "signature", type: "bytes" },
         ],
       },
     ],
@@ -70,6 +73,13 @@ const REGISTRAR_ABI = [
       { name: "duration", type: "uint256" },
     ],
     outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "available",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [{ name: "", type: "bool" }],
   },
 ];
 
@@ -522,38 +532,198 @@ async function main() {
   if (walletSecret) cdpOpts.walletSecret = walletSecret;
   const cdp = new CdpClient(cdpOpts);
 
-  // Step 1: Create EOA wallet (CDP server-managed key)
-  step("📦", "Creating wallet...");
+  // ═══════════════════════════════════════════════════════════════
+  // STEP 1: Create Agent Wallet
+  // ═══════════════════════════════════════════════════════════════
+  step("📦", "Creating agent wallet...");
   const eoaAccount = await cdp.evm.createAccount();
   done(truncAddr(eoaAccount.address));
 
-  // Check ETH balance
   const publicClient = createPublicClient({ chain: base, transport: http() });
   const balance = await publicClient.getBalance({ address: eoaAccount.address });
   if (balance === 0n) {
-    console.log(`   ⚠️  Wallet has 0 ETH. Needs ~0.005 ETH for gas on Base.`);
-    console.log(`   💰 Fund ${eoaAccount.address} then re-run, or use --fund to auto-fund.`);
+    console.log(`\n   ⚠️  Wallet has 0 ETH. Needs ~0.005 ETH for gas on Base.`);
+    console.log(`   💰 Fund this address: ${eoaAccount.address}`);
+    console.log(`   ⏳ Waiting for funds (checking every 10s)...\n`);
+
+    // Poll for funding
+    let funded = false;
+    for (let i = 0; i < 60; i++) { // Wait up to 10 minutes
+      await new Promise(r => setTimeout(r, 10000));
+      const bal = await publicClient.getBalance({ address: eoaAccount.address });
+      if (bal > 0n) {
+        const { formatEther } = await import("viem");
+        console.log(`   ✅ Funded! Balance: ${formatEther(bal)} ETH\n`);
+        funded = true;
+        break;
+      }
+      if (i % 6 === 5) console.log(`   ⏳ Still waiting... (${Math.round((i+1)*10/60)}min)`);
+    }
+    if (!funded) {
+      console.error("   ❌ Timed out waiting for funds. Fund the wallet and re-run.");
+      console.error(`   Wallet: ${eoaAccount.address}`);
+      // Still save wallet info so agent can resume
+      const output = {
+        timestamp: new Date().toISOString(),
+        walletAddress: eoaAccount.address,
+        status: "awaiting_funds",
+        name: opts.name,
+        symbol: opts.symbol,
+      };
+      const filename = `launch-${opts.symbol.toLowerCase()}-${Date.now()}.json`;
+      writeFileSync(filename, JSON.stringify(output, null, 2));
+      console.log(`\n📄 Wallet saved to ${filename} — fund and re-run to continue.`);
+      process.exit(1);
+    }
   }
 
-  // Step 2: Launch token (direct EOA tx via Clanker SDK — no ERC-4337 overhead)
+  // ═══════════════════════════════════════════════════════════════
+  // STEP 2: Deploy Token
+  // ═══════════════════════════════════════════════════════════════
   const tokenResult = await launchToken(cdp, eoaAccount, opts);
 
-  // ── Summary ──
-  console.log(`
-── Summary ────────────────────────────────
-  Wallet:    ${eoaAccount.address}${tokenResult.tokenAddress ? `\n  Token:     ${tokenResult.tokenAddress}` : ""}${tokenResult.txHash ? `\n  Tx:        https://basescan.org/tx/${tokenResult.txHash}` : ""}${tokenResult.tokenAddress ? `\n  Trade:     https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : ""}
-  Fee split: Agent 60% | Protocol 20% | Bankr 20%
-───────────────────────────────────────────
+  if (!tokenResult.tokenAddress) {
+    console.error("\n❌ Token deployment failed. Check errors above.");
+    process.exit(1);
+  }
 
-💡 Save your wallet address — this is your agent's onchain identity.
-   CDP manages the private key server-side.
-${tokenResult.tokenAddress ? `\n🎉 $${opts.symbol} is live! Share the Clanker link above.` : ""}
+  // ═══════════════════════════════════════════════════════════════
+  // STEP 3: Register Basename
+  // ═══════════════════════════════════════════════════════════════
+  if (opts.basename) {
+    const label = opts.name.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    step("🏷️ ", `Registering ${label}.base.eth...`);
+
+    try {
+      const walletClient = createWalletClient({
+        account: eoaAccount,
+        chain: base,
+        transport: http(),
+      });
+
+      // Check availability
+      const isAvailable = await publicClient.readContract({
+        address: BASENAME_REGISTRAR,
+        abi: REGISTRAR_ABI,
+        functionName: "available",
+        args: [label],
+      });
+
+      if (!isAvailable) {
+        fail(`${label}.base.eth is taken`);
+      } else {
+        // Get price
+        const price = await publicClient.readContract({
+          address: BASENAME_REGISTRAR,
+          abi: REGISTRAR_ABI,
+          functionName: "registerPrice",
+          args: [label, ONE_YEAR],
+        });
+        const value = (price * 110n) / 100n; // 10% buffer
+
+        // Register with correct struct (UpgradeableRegistrarController)
+        const registerData = encodeFunctionData({
+          abi: REGISTRAR_ABI,
+          functionName: "register",
+          args: [{
+            name: label,
+            owner: eoaAccount.address,
+            duration: ONE_YEAR,
+            resolver: BASENAME_RESOLVER,
+            data: [],
+            reverseRecord: true,
+            coinTypes: [],
+            signatureExpiry: 0n,
+            signature: "0x",
+          }],
+        });
+
+        const hash = await walletClient.sendTransaction({
+          to: BASENAME_REGISTRAR,
+          data: registerData,
+          value,
+        });
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+        if (receipt.status === "success") {
+          done(`${label}.base.eth`);
+        } else {
+          fail(`${label}.base.eth — tx reverted`);
+        }
+      }
+    } catch (error) {
+      fail(`${error.message?.slice(0, 60) || "registration failed"}`);
+      console.log(`   ℹ️  Agent may need more ETH for basename registration (~0.001 ETH)`);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // STEP 4: Security Audit
+  // ═══════════════════════════════════════════════════════════════
+  step("🔐", "Running security audit...");
+
+  try {
+    const scriptDir = dirname(new URL(import.meta.url).pathname);
+    const securityResult = await new Promise((resolve, reject) => {
+      const child = spawn("node", [
+        join(scriptDir, "post-launch-security.mjs"),
+        "--token", tokenResult.tokenAddress,
+        "--wallet", eoaAccount.address,
+      ], { stdio: ["inherit", "pipe", "pipe"] });
+
+      let stdout = "";
+      child.stdout.on("data", (d) => { stdout += d.toString(); });
+      child.stderr.on("data", (d) => { stdout += d.toString(); });
+      child.on("close", (code) => resolve({ code, output: stdout }));
+      child.on("error", (err) => reject(err));
+    });
+
+    if (securityResult.code === 0) {
+      done("All checks passed");
+    } else {
+      fail("Some checks failed");
+    }
+    console.log(securityResult.output);
+  } catch (error) {
+    fail(`Security audit error: ${error.message?.slice(0, 60)}`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SUMMARY
+  // ═══════════════════════════════════════════════════════════════
+  const basenameLabel = opts.basename ? opts.name.toLowerCase().replace(/[^a-z0-9-]/g, "") : null;
+
+  console.log(`
+══════════════════════════════════════════════
+  🤖 LAUNCH COMPLETE
+══════════════════════════════════════════════
+
+  Agent Wallet:  ${eoaAccount.address}${basenameLabel ? `\n  Basename:     ${basenameLabel}.base.eth` : ""}
+  Token:         ${tokenResult.tokenAddress}
+  Trade:         https://www.clanker.world/clanker/${tokenResult.tokenAddress}
+  Tx:            https://basescan.org/tx/${tokenResult.txHash}
+
+  Fee Split:
+    Agent    60%  →  ${truncAddr(eoaAccount.address)}
+    Protocol 20%  →  ${truncAddr(PROTOCOL_FEE_ADDRESS)}
+    Bankr    20%  →  ${truncAddr(BANKR_FEE_ADDRESS)}
+
+══════════════════════════════════════════════
+
+  💡 Your agent wallet is managed by CDP.
+     Re-access it anytime with the same CDP credentials
+     and address: ${eoaAccount.address}
+
+  📋 Next steps:
+     • Claim fees: node claim-fees.mjs --token ${tokenResult.tokenAddress} --wallet ${eoaAccount.address}
+     • Set up auto-claim on a cron schedule
 `);
 
-  // Save launch data to JSON file for state persistence
+  // Save launch data
   const output = {
     timestamp: new Date().toISOString(),
     walletAddress: eoaAccount.address,
+    basename: basenameLabel ? `${basenameLabel}.base.eth` : null,
     tokenAddress: tokenResult.tokenAddress,
     txHash: tokenResult.txHash,
     name: opts.name,
@@ -564,13 +734,13 @@ ${tokenResult.tokenAddress ? `\n🎉 $${opts.symbol} is live! Share the Clanker 
       bankr: { address: BANKR_FEE_ADDRESS, bps: BANKR_BPS },
     },
     feeSplit: "Agent 60% / Protocol 20% / Bankr 20%",
-    clankerUrl: tokenResult.tokenAddress ? `https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : null,
-    basescanUrl: tokenResult.txHash ? `https://basescan.org/tx/${tokenResult.txHash}` : null,
+    clankerUrl: `https://www.clanker.world/clanker/${tokenResult.tokenAddress}`,
+    basescanUrl: `https://basescan.org/tx/${tokenResult.txHash}`,
   };
-  
+
   const filename = `launch-${opts.symbol.toLowerCase()}-${Date.now()}.json`;
   writeFileSync(filename, JSON.stringify(output, null, 2));
-  console.log(`\n📄 Launch data saved to ${filename}`);
+  console.log(`📄 Launch data saved to ${filename}`);
 }
 
 main().catch((error) => {
