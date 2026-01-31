@@ -387,22 +387,18 @@ async function swapViaV4ToWeth(publicClient, walletClient, account, tokenAddress
   const tokenIsC0 = tokenAddress.toLowerCase() === poolKey.currency0.toLowerCase();
   const zeroForOne = tokenIsC0; // if selling currency0, zeroForOne=true
 
-  // V4Router action: SWAP_EXACT_IN_SINGLE = 0x06
-  const actionsBytes = '0x06';
+  // V4 swap: SWAP_EXACT_IN_SINGLE(0x06) + SETTLE_ALL(0x0c) + TAKE_ALL(0x0f)
+  const actionsBytes = '0x060c0f';
 
-  // Encode the swap params for SWAP_EXACT_IN_SINGLE:
-  // (PoolKey, bool zeroForOne, uint128 amountIn, uint128 amountOutMinimum, uint160 sqrtPriceLimitX96, bytes hookData)
+  const inputCurrency = zeroForOne ? poolKey.currency0 : poolKey.currency1;
+  const outputCurrency = zeroForOne ? poolKey.currency1 : poolKey.currency0;
+
+  // CRITICAL: Encode as single struct parameter (CalldataDecoder reads first word as offset)
+  // V4 ExactInputSingleParams does NOT have sqrtPriceLimitX96 (unlike V3)
   const swapParams = defaultAbiCoder.encode(
-    [
-      `tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks)`,
-      'bool',
-      'uint128',
-      'uint128',
-      'uint160',
-      'bytes',
-    ],
-    [
-      {
+    ['tuple(tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) poolKey, bool zeroForOne, uint128 amountIn, uint128 amountOutMinimum, bytes hookData)'],
+    [{
+      poolKey: {
         currency0: poolKey.currency0,
         currency1: poolKey.currency1,
         fee: poolKey.fee,
@@ -410,17 +406,18 @@ async function swapViaV4ToWeth(publicClient, walletClient, account, tokenAddress
         hooks: poolKey.hooks,
       },
       zeroForOne,
-      amount.toString(),
-      '0', // amountOutMinimum = 0 (we check after)
-      '0', // sqrtPriceLimitX96 = 0 (no limit)
-      '0x', // hookData = empty
-    ]
+      amountIn: amount.toString(),
+      amountOutMinimum: '0',
+      hookData: '0x',
+    }]
   );
+  const settleParams = defaultAbiCoder.encode(['address', 'uint256'], [inputCurrency, amount.toString()]);
+  const takeParams = defaultAbiCoder.encode(['address', 'uint256'], [outputCurrency, '0']);
 
   // V4_SWAP input: abi.encode(bytes actions, bytes[] params)
   const v4SwapInput = defaultAbiCoder.encode(
     ['bytes', 'bytes[]'],
-    [actionsBytes, [swapParams]]
+    [actionsBytes, [swapParams, settleParams, takeParams]]
   );
 
   // Command 0x10 = V4_SWAP

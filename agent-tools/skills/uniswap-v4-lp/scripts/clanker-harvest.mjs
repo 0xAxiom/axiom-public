@@ -30,6 +30,7 @@
 import { createPublicClient, createWalletClient, http, formatEther, formatUnits, parseAbi, maxUint256, encodeAbiParameters, parseAbiParameters } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
+import { defaultAbiCoder } from '@ethersproject/abi';
 import fs from 'fs';
 
 // ─── CLI / Config ────────────────────────────────────────────────────────────
@@ -116,6 +117,7 @@ Examples:
 const C = {
   POSITION_MANAGER: '0x7c5f5a4bbd8fd63184577525326123b519429bdc',
   PERMIT2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+  UNIVERSAL_ROUTER: '0x6ff5693b99212da76ad316178a184ab56d299b43',
   WETH: '0x4200000000000000000000000000000000000006',
   USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   SWAP_ROUTER: '0x2626664c2603336E57B271c5C0b26F421741e481',
@@ -144,6 +146,92 @@ const ERC20 = parseAbi([
 const SWAP_ABI = parseAbi([
   'function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) payable returns (uint256)',
 ]);
+
+const PERMIT2_ABI = [
+  { name: 'allowance', type: 'function', inputs: [{ type: 'address' }, { type: 'address' }, { type: 'address' }], outputs: [{ type: 'uint160' }, { type: 'uint48' }, { type: 'uint48' }] },
+  { name: 'approve', type: 'function', inputs: [{ type: 'address' }, { type: 'address' }, { type: 'uint160' }, { type: 'uint48' }], outputs: [] },
+];
+
+const UNIVERSAL_ROUTER_ABI = [{
+  name: 'execute', type: 'function',
+  inputs: [{ name: 'commands', type: 'bytes' }, { name: 'inputs', type: 'bytes[]' }, { name: 'deadline', type: 'uint256' }],
+  outputs: [],
+}];
+
+// ─── V4 Swap via Universal Router ────────────────────────────────────────────
+
+/**
+ * Swap token → WETH via V4 Universal Router.
+ * Uses SWAP_EXACT_IN_SINGLE + SETTLE_ALL + TAKE_ALL pattern.
+ * CRITICAL: ExactInputSingleParams must be encoded as a SINGLE STRUCT parameter.
+ */
+async function swapTokenToWethV4(pub, wallet, account, tokenAddress, amount, poolKey) {
+  console.log(`   Swapping token → WETH via V4 Universal Router...`);
+
+  // 1. Ensure ERC20 → Permit2 approval
+  const erc20Allow = await retry(() => pub.readContract({
+    address: tokenAddress, abi: ERC20, functionName: 'allowance',
+    args: [account.address, C.PERMIT2],
+  }));
+  if (erc20Allow < amount) {
+    console.log(`   Approving token → Permit2...`);
+    const tx = await wallet.writeContract({
+      address: tokenAddress, abi: ERC20, functionName: 'approve',
+      args: [C.PERMIT2, maxUint256],
+    });
+    await pub.waitForTransactionReceipt({ hash: tx });
+    await sleep(1000);
+  }
+
+  // 2. Ensure Permit2 → Universal Router approval
+  const [p2Amount] = await retry(() => pub.readContract({
+    address: C.PERMIT2, abi: PERMIT2_ABI, functionName: 'allowance',
+    args: [account.address, tokenAddress, C.UNIVERSAL_ROUTER],
+  }));
+  if (BigInt(p2Amount) < amount) {
+    console.log(`   Approving Universal Router on Permit2...`);
+    const maxU160 = (1n << 160n) - 1n;
+    const maxU48 = (1n << 48n) - 1n;
+    const tx = await wallet.writeContract({
+      address: C.PERMIT2, abi: PERMIT2_ABI, functionName: 'approve',
+      args: [tokenAddress, C.UNIVERSAL_ROUTER, maxU160, maxU48],
+    });
+    await pub.waitForTransactionReceipt({ hash: tx });
+    await sleep(1000);
+  }
+
+  // 3. Build V4_SWAP: SWAP_EXACT_IN_SINGLE(0x06) + SETTLE_ALL(0x0c) + TAKE_ALL(0x0f)
+  const tokenIsC0 = tokenAddress.toLowerCase() === poolKey.currency0.toLowerCase();
+  const zeroForOne = tokenIsC0;
+  const inputCurrency = zeroForOne ? poolKey.currency0 : poolKey.currency1;
+  const outputCurrency = zeroForOne ? poolKey.currency1 : poolKey.currency0;
+
+  // CRITICAL: Encode as single struct parameter (CalldataDecoder reads first word as offset)
+  const swapParams = defaultAbiCoder.encode(
+    ['tuple(tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) poolKey, bool zeroForOne, uint128 amountIn, uint128 amountOutMinimum, bytes hookData)'],
+    [{
+      poolKey: { currency0: poolKey.currency0, currency1: poolKey.currency1, fee: poolKey.fee, tickSpacing: poolKey.tickSpacing, hooks: poolKey.hooks },
+      zeroForOne,
+      amountIn: amount.toString(),
+      amountOutMinimum: '0',
+      hookData: '0x',
+    }]
+  );
+  const settleParams = defaultAbiCoder.encode(['address', 'uint256'], [inputCurrency, amount.toString()]);
+  const takeParams = defaultAbiCoder.encode(['address', 'uint256'], [outputCurrency, '0']);
+  const v4SwapInput = defaultAbiCoder.encode(['bytes', 'bytes[]'], ['0x060c0f', [swapParams, settleParams, takeParams]]);
+
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+  const hash = await wallet.writeContract({
+    address: C.UNIVERSAL_ROUTER, abi: UNIVERSAL_ROUTER_ABI,
+    functionName: 'execute',
+    args: ['0x10', [v4SwapInput], deadline],
+  });
+  const receipt = await pub.waitForTransactionReceipt({ hash });
+  if (receipt.status !== 'success') throw new Error(`V4 swap reverted: ${hash}`);
+  console.log(`   ✅ V4 swap: ${hash.slice(0, 20)}...`);
+  return { hash, receipt };
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -531,9 +619,35 @@ ${cfg.dryRun ? '🔮  DRY RUN' : '🔥  LIVE'}
         }
       }
 
-      // TODO: Token → WETH → USDC via V4 Universal Router
-      if (harvestToken > 0n) {
-        console.log(`   ⚠️ ${symbol} → USDC swap not yet implemented (stays in wallet)`);
+      // Token → WETH via V4 Universal Router, then WETH → USDC via V3
+      if (harvestToken > 0n && poolKey) {
+        try {
+          const wethBefore = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+          await swapTokenToWethV4(pub, wallet, account, cfg.token, harvestToken, poolKey);
+          await sleep(2000);
+          const wethAfter = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+          const wethGained = wethAfter - wethBefore;
+          if (wethGained > 0n) {
+            console.log(`   Got ${formatEther(wethGained)} WETH from V4 swap, now → USDC...`);
+            const allow = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'allowance', args: [account.address, C.SWAP_ROUTER] });
+            if (allow < wethGained) {
+              const tx = await wallet.writeContract({ address: C.WETH, abi: ERC20, functionName: 'approve', args: [C.SWAP_ROUTER, maxUint256] });
+              await pub.waitForTransactionReceipt({ hash: tx });
+              await sleep(500);
+            }
+            const tx = await wallet.writeContract({
+              address: C.SWAP_ROUTER, abi: SWAP_ABI,
+              functionName: 'exactInputSingle',
+              args: [{ tokenIn: C.WETH, tokenOut: C.USDC, fee: 500, recipient: account.address, amountIn: wethGained, amountOutMinimum: 0n, sqrtPriceLimitX96: 0n }],
+            });
+            await pub.waitForTransactionReceipt({ hash: tx });
+            console.log(`   ✅ WETH → USDC: ${tx.slice(0, 20)}...`);
+          }
+        } catch (err) {
+          console.log(`   ❌ V4 token swap failed: ${err.shortMessage || err.message}`);
+        }
+      } else if (harvestToken > 0n) {
+        console.log(`   ⚠️ No pool key available for V4 swap (need --token-id)`);
       }
 
       // Measure USDC gained
