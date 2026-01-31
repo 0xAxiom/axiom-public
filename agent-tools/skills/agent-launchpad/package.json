@@ -1,0 +1,19 @@
+{
+  "name": "agent-launchpad",
+  "version": "1.0.0",
+  "description": "One-command tool to take any AI agent onchain: wallet + basename + token",
+  "main": "scripts/launch.mjs",
+  "type": "module",
+  "scripts": {
+    "launch": "node scripts/launch.mjs",
+    "test": "node scripts/test-connection.mjs"
+  },
+  "keywords": ["agent", "onchain", "base", "clanker", "cdp"],
+  "author": "MeltedMindz",
+  "license": "MIT",
+  "dependencies": {
+    "@coinbase/cdp-sdk": "^1.44.0",
+    "clanker-sdk": "^4.2.10",
+    "viem": "^2.45.1"
+  }
+}
