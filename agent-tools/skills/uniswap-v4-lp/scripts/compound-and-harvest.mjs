@@ -673,7 +673,15 @@ async function main() {
   const [ethPrice, token1Price] = await Promise.all([getEthPrice(), getTokenPrice(poolKey.currency1)]);
   const fees0Usd = (Number(fees0) / Math.pow(10, token0Decimals)) * (poolKey.currency0.toLowerCase() === CONTRACTS.WETH.toLowerCase() ? ethPrice : await getTokenPrice(poolKey.currency0));
   const fees1Usd = (Number(fees1) / Math.pow(10, token1Decimals)) * token1Price;
-  console.log(`   Value: ~$${(fees0Usd + fees1Usd).toFixed(4)}`);
+  const totalFeesUsd = fees0Usd + fees1Usd;
+  console.log(`   Value: ~$${totalFeesUsd.toFixed(4)}`);
+
+  // Skip if fees are below minimum threshold (default $0.50)
+  const minHarvestUsd = parseFloat(process.env.MIN_HARVEST_USD || '0.50');
+  if (totalFeesUsd < minHarvestUsd) {
+    console.log(`\n⏭️  Fees ($${totalFeesUsd.toFixed(4)}) below minimum threshold ($${minHarvestUsd.toFixed(2)}) — skipping harvest to save gas`);
+    process.exit(0);
+  }
 
   // ─── Step 3: Split and Compound ──────────────────────────────────────────
   const compound0 = fees0 * BigInt(compoundPct) / 100n;
