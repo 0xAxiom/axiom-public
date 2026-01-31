@@ -123,52 +123,34 @@ async function main() {
 
   console.log('\n🔥 Removing liquidity...');
 
-  // Build actions - if 100%, also burn the NFT
-  const burnPosition = argv.percent === 100;
-  let actionsHex;
-  if (burnPosition) {
-    actionsHex = '0x' + 
-      Actions.DECREASE_LIQUIDITY.toString(16).padStart(2, '0') +
-      Actions.BURN_POSITION.toString(16).padStart(2, '0') +
-      Actions.TAKE_PAIR.toString(16).padStart(2, '0');
-  } else {
-    actionsHex = '0x' + 
-      Actions.DECREASE_LIQUIDITY.toString(16).padStart(2, '0') +
-      Actions.TAKE_PAIR.toString(16).padStart(2, '0');
-  }
+  // Clanker hook pools require CLOSE_CURRENCY pattern (TAKE_PAIR fails)
+  // Pattern: DECREASE(0x01) + CLOSE_CURRENCY(0x11) — 2 actions only
+  const actionsHex = '0x0111';
+
+  // Helper: pad to 32 bytes
+  const pad32 = (v) => v.replace('0x', '').padStart(64, '0');
 
   // DECREASE_LIQUIDITY params: tokenId, liquidityDelta, amount0Min, amount1Min, hookData
-  const decreaseParams = defaultAbiCoder.encode(
-    ['uint256', 'uint256', 'uint128', 'uint128', 'bytes'],
-    [
-      argv.tokenId,
-      liquidityToRemove.toString(),
-      0,  // amount0Min (add slippage protection in production)
-      0,  // amount1Min
-      '0x', // hookData
-    ]
-  );
+  const decreaseParams = '0x' +
+    pad32('0x' + BigInt(argv.tokenId).toString(16)) +
+    pad32('0x' + liquidityToRemove.toString(16)) +
+    '0'.padStart(64, '0') +     // amount0Min = 0
+    '0'.padStart(64, '0') +     // amount1Min = 0
+    (5 * 32).toString(16).padStart(64, '0') +  // offset to hookData
+    '0'.padStart(64, '0');      // hookData = empty bytes
 
-  // BURN_POSITION params (if burning): tokenId
-  const burnParams = burnPosition 
-    ? defaultAbiCoder.encode(['uint256'], [argv.tokenId])
-    : null;
+  // CLOSE_CURRENCY params: currency0, currency1, recipient
+  const closeParams = '0x' +
+    pad32(poolKey.currency0) +
+    pad32(poolKey.currency1) +
+    pad32(account.address);
 
-  // TAKE_PAIR params: currency0, currency1, recipient (use MSG_SENDER = address(1))
-  const takeParams = defaultAbiCoder.encode(
-    ['address', 'address', 'address'],
-    [poolKey.currency0, poolKey.currency1, account.address]
-  );
-
-  // Build params array
-  const paramsArray = burnPosition
-    ? [decreaseParams, burnParams, takeParams]
-    : [decreaseParams, takeParams];
+  const { encodeAbiParameters, parseAbiParameters } = await import('viem');
 
   // Build unlockData
-  const unlockData = defaultAbiCoder.encode(
-    ['bytes', 'bytes[]'],
-    [actionsHex, paramsArray]
+  const unlockData = encodeAbiParameters(
+    parseAbiParameters('bytes, bytes[]'),
+    [actionsHex, [decreaseParams, closeParams]]
   );
 
   const deadline = Math.floor(Date.now() / 1000) + 1800;

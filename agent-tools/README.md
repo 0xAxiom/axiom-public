@@ -12,6 +12,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🦄 [uniswap-v4-lp](./skills/uniswap-v4-lp/) | Uniswap V4 LP management on Base | `node`, `NET_PRIVATE_KEY` |
 | 🛡️ [agent-security](./skills/agent-security/) | Security guardrails, audit tools, secret scanner | `node` |
 | 📊 [coingecko-price](./skills/coingecko-price/) | Real-time crypto prices, alerts, market data | `node` |
+| 🏆 [bankr-airdrop](./skills/bankr-airdrop/) | Bankr leaderboard rankings, wallet export, airdrops | `node` |
 
 ---
 
@@ -157,6 +158,28 @@ node skills/coingecko-price/scripts/watch.mjs --token ethereum --interval 300 --
 
 ---
 
+### 🏆 bankr-airdrop
+
+Query the Bankr leaderboard, look up user profiles and wallets, and export wallet lists for airdrops.
+
+```bash
+# Top 50 rankings
+node skills/bankr-airdrop/scripts/bankr-airdrop.mjs --action rankings --count 50
+
+# Look up a user's profile and wallet
+node skills/bankr-airdrop/scripts/bankr-airdrop.mjs --action profile --user @thatdudeboz
+
+# Export top 200 wallets as CSV (for airdrops)
+node skills/bankr-airdrop/scripts/export-wallets.mjs --count 200 --out ./bankr-top200.csv
+
+# Top PnL traders in last 7 days
+node skills/bankr-airdrop/scripts/bankr-airdrop.mjs --action rankings --count 20 --timeframe 7d --type pnl
+```
+
+**Filters:** timeframe (`24h`, `7d`, `30d`, `total`), type (`total`, `staking`, `bnkr`, `earn`, `pnl`, `referral`, `nft`, `booster`)
+
+---
+
 ## Installation
 
 Copy skills to your global or workspace skills directory:
@@ -169,6 +192,7 @@ cp -r skills/tx-verify ~/.clawdbot/skills/
 cp -r skills/uniswap-v4-lp ~/.clawdbot/skills/
 cp -r skills/agent-security ~/.clawdbot/skills/
 cp -r skills/coingecko-price ~/.clawdbot/skills/
+cp -r skills/bankr-airdrop ~/.clawdbot/skills/
 
 # Or workspace installation
 cp -r skills/* ./skills/
