@@ -93,7 +93,6 @@ function parseArgs() {
     symbol: null,
     description: "",
     image: "",
-    basename: false,
     marketCap: 10, // ETH
     help: false,
   };
@@ -116,10 +115,6 @@ function parseArgs() {
       case "-i":
         opts.image = args[++i] || "";
         break;
-      case "--basename":
-      case "-b":
-        opts.basename = true;
-        break;
       case "--market-cap":
       case "-m":
         opts.marketCap = parseFloat(args[++i]);
@@ -131,7 +126,44 @@ function parseArgs() {
     }
   }
 
+  // Auto-derive symbol from name if not provided
+  if (opts.name && !opts.symbol) {
+    // Take first word, uppercase, max 10 chars
+    opts.symbol = opts.name
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .split(/\s+/)[0]
+      .toUpperCase()
+      .slice(0, 10);
+  }
+
   return opts;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Basename Auto-Naming with Fallbacks
+// ═══════════════════════════════════════════════════════════════
+
+function generateBasenameCandidates(name, symbol) {
+  const base = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const sym = symbol.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  // Generate candidates in priority order
+  const candidates = [
+    base,                    // scoutai
+    sym,                     // scout
+    `${base}bot`,            // scoutaibot
+    `${sym}bot`,             // scoutbot
+    `${base}0x`,             // scoutai0x
+    `${sym}0x`,              // scout0x
+    `${base}agent`,          // scoutaiagent
+    `${sym}agent`,           // scoutagent
+    `${sym}ai`,              // scoutai
+    `${base}x`,              // scoutaix
+    `${sym}x`,               // scoutx
+  ];
+
+  // Deduplicate while preserving order
+  return [...new Set(candidates)].filter(c => c.length >= 3);
 }
 
 function showHelp() {
@@ -140,33 +172,41 @@ function showHelp() {
 ═══════════════════
 
 Take any AI agent onchain in one command.
+Creates wallet, deploys token, registers basename, runs security audit.
 
 Usage:
-  node launch.mjs --name "MyAgent" --symbol "AGENT" [options]
+  node launch.mjs --name "ScoutAI" [options]
 
 Required:
-  --name, -n        Token name (e.g., "MyAgent")
-  --symbol, -s      Token symbol (e.g., "AGENT")
+  --name, -n        Agent/token name (e.g., "ScoutAI")
 
 Optional:
+  --symbol, -s      Token symbol (auto-derived from name if omitted, e.g., "SCOUTAI")
   --description, -d Token description
   --image, -i       Token image URL or local file path
-  --basename, -b    Register <name>.base.eth (gasless)
   --market-cap, -m  Initial market cap in ETH (default: 10)
   --help, -h        Show this help
 
-Fee Split (hardcoded):
+Automatic:
+  • Symbol auto-derived from name (first word, uppercase)
+  • Basename always registered with fallbacks:
+    name → namebot → name0x → nameagent → symbol variants
+  • Security audit runs after deployment
+  • All gas sponsored by CDP paymaster (gasless)
+
+Fee Split (hardcoded, enforced on-chain):
   Agent 60% | Protocol 20% | Bankr 20%
-  This split is enforced on-chain and cannot be overridden.
 
 Environment Variables:
   CDP_API_KEY_ID      Coinbase Developer Platform API key ID
   CDP_API_KEY_SECRET  CDP API key secret (EC private key PEM)
   CDP_WALLET_SECRET   CDP wallet encryption secret
+  CDP_PAYMASTER_URL   Paymaster & Bundler endpoint
 
 Examples:
-  node launch.mjs --name "MyAgent" --symbol "AGENT" --description "AI agent"
-  node launch.mjs --name "MyAgent" --symbol "AGENT" --image ./avatar.png
+  node launch.mjs --name "ScoutAI"
+  node launch.mjs --name "ScoutAI" --description "AI research assistant"
+  node launch.mjs --name "ScoutAI" --symbol "SCOUT" --image ./avatar.png
 `);
 }
 
@@ -369,10 +409,14 @@ async function launchToken(cdp, smartAccount, eoaAccount, opts, paymasterUrl, pu
 async function main() {
   const opts = parseArgs();
 
-  if (opts.help || !opts.name || !opts.symbol) {
+  if (opts.help || !opts.name) {
     showHelp();
     process.exit(opts.help ? 0 : 1);
   }
+
+  console.log(`   Agent: ${opts.name}`);
+  console.log(`   Token: $${opts.symbol}`);
+  console.log(`   Basename: auto (with fallbacks)\n`);
 
   console.log(`
 🤖 Agent Launchpad
@@ -477,87 +521,106 @@ async function main() {
   await new Promise(r => setTimeout(r, 3000));
 
   // ═══════════════════════════════════════════════════════════════
-  // STEP 3: Register Basename
+  // STEP 3: Register Basename (auto-naming with fallbacks)
   // ═══════════════════════════════════════════════════════════════
-  if (opts.basename) {
-    const label = opts.name.toLowerCase().replace(/[^a-z0-9-]/g, "");
-    step("🏷️ ", `Registering ${label}.base.eth...`);
+  let registeredBasename = null;
 
-    try {
-      // Check availability
-      const isAvailable = await publicClient.readContract({
-        address: BASENAME_REGISTRAR,
-        abi: REGISTRAR_ABI,
-        functionName: "available",
-        args: [label],
-      });
+  step("🏷️ ", "Finding available basename...");
+  const candidates = generateBasenameCandidates(opts.name, opts.symbol);
+  console.log(`\n   📋 Candidates: ${candidates.map(c => c + ".base.eth").join(", ")}`);
 
-      if (!isAvailable) {
-        fail(`${label}.base.eth is taken`);
-      } else {
-        // Get price
-        const price = await publicClient.readContract({
+  try {
+    // Check availability for each candidate
+    let chosenLabel = null;
+    for (const label of candidates) {
+      try {
+        const isAvailable = await publicClient.readContract({
           address: BASENAME_REGISTRAR,
           abi: REGISTRAR_ABI,
-          functionName: "registerPrice",
-          args: [label, ONE_YEAR],
+          functionName: "available",
+          args: [label],
         });
-        const value = (price * 110n) / 100n; // 10% buffer
-
-        // Encode register call (UpgradeableRegistrarController struct)
-        const registerData = encodeFunctionData({
-          abi: REGISTRAR_ABI,
-          functionName: "register",
-          args: [{
-            name: label,
-            owner: smartAccount.address,
-            duration: ONE_YEAR,
-            resolver: BASENAME_RESOLVER,
-            data: [],
-            reverseRecord: true,
-            coinTypes: [],
-            signatureExpiry: 0n,
-            signature: "0x",
-          }],
-        });
-
-        // Send via smart account + paymaster (gasless)
-        // Note: The registration FEE (value) must be covered by the smart account
-        // The paymaster covers GAS but not the ETH value for basename registration
-        console.log(`\n   ⛽ Sending via paymaster...`);
-        const userOpResult = await cdp.evm.sendUserOperation({
-          smartAccount,
-          network: "base",
-          paymasterUrl,
-          calls: [{
-            to: BASENAME_REGISTRAR,
-            data: registerData,
-            value,
-          }],
-        });
-
-        console.log(`   ⏳ Waiting for confirmation...`);
-        const receipt = await cdp.evm.waitForUserOperation({
-          smartAccount,
-          userOpHash: userOpResult.userOpHash,
-        });
-
-        if (receipt.transactionHash) {
-          // Wait for block confirmations
-          await publicClient.waitForTransactionReceipt({
-            hash: receipt.transactionHash,
-            confirmations: 2,
-          });
-          done(`${label}.base.eth (confirmed)`);
+        if (isAvailable) {
+          chosenLabel = label;
+          console.log(`   ✅ ${label}.base.eth is available!`);
+          break;
         } else {
-          fail(`${label}.base.eth — UserOp failed`);
+          console.log(`   ❌ ${label}.base.eth — taken`);
         }
+        // Small delay to avoid rate limiting
+        await new Promise(r => setTimeout(r, 500));
+      } catch (e) {
+        // Rate limit or RPC error, skip this candidate
+        console.log(`   ⚠️  ${label}.base.eth — check failed, skipping`);
       }
-    } catch (error) {
-      fail(`${error.message?.slice(0, 80) || "registration failed"}`);
-      console.log(`   ℹ️  Note: Basename registration costs ~0.001 ETH (fee, not gas).`);
-      console.log(`   ℹ️  The smart account may need ETH for the name fee.`);
     }
+
+    if (!chosenLabel) {
+      fail("No basename available from candidates");
+      console.log(`   ℹ️  All candidates taken. Agent can register manually later.`);
+    } else {
+      step("🏷️ ", `Registering ${chosenLabel}.base.eth...`);
+
+      // Get price
+      const price = await publicClient.readContract({
+        address: BASENAME_REGISTRAR,
+        abi: REGISTRAR_ABI,
+        functionName: "registerPrice",
+        args: [chosenLabel, ONE_YEAR],
+      });
+      const value = (price * 110n) / 100n; // 10% buffer
+
+      // Encode register call (UpgradeableRegistrarController struct)
+      const registerData = encodeFunctionData({
+        abi: REGISTRAR_ABI,
+        functionName: "register",
+        args: [{
+          name: chosenLabel,
+          owner: smartAccount.address,
+          duration: ONE_YEAR,
+          resolver: BASENAME_RESOLVER,
+          data: [],
+          reverseRecord: true,
+          coinTypes: [],
+          signatureExpiry: 0n,
+          signature: "0x",
+        }],
+      });
+
+      // Send via smart account + paymaster
+      console.log(`\n   ⛽ Sending via paymaster...`);
+      const userOpResult = await cdp.evm.sendUserOperation({
+        smartAccount,
+        network: "base",
+        paymasterUrl,
+        calls: [{
+          to: BASENAME_REGISTRAR,
+          data: registerData,
+          value,
+        }],
+      });
+
+      console.log(`   ⏳ Waiting for confirmation...`);
+      const receipt = await cdp.evm.waitForUserOperation({
+        smartAccount,
+        userOpHash: userOpResult.userOpHash,
+      });
+
+      if (receipt.transactionHash) {
+        await publicClient.waitForTransactionReceipt({
+          hash: receipt.transactionHash,
+          confirmations: 2,
+        });
+        registeredBasename = `${chosenLabel}.base.eth`;
+        done(`${registeredBasename} (confirmed)`);
+      } else {
+        fail(`${chosenLabel}.base.eth — UserOp failed`);
+      }
+    }
+  } catch (error) {
+    fail(`${error.message?.slice(0, 80) || "basename registration failed"}`);
+    console.log(`   ℹ️  Note: Basename registration costs ~0.001 ETH (fee, not gas).`);
+    console.log(`   ℹ️  The smart account may need ETH for the name fee.`);
   }
 
   // Brief pause before security audit
@@ -597,15 +660,13 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════
   // SUMMARY
   // ═══════════════════════════════════════════════════════════════
-  const basenameLabel = opts.basename ? opts.name.toLowerCase().replace(/[^a-z0-9-]/g, "") : null;
-
   console.log(`
 ══════════════════════════════════════════════
   🤖 LAUNCH COMPLETE
 ══════════════════════════════════════════════
 
   Agent Wallet:  ${smartAccount.address}
-  Signer (EOA):  ${eoaAccount.address}${basenameLabel ? `\n  Basename:     ${basenameLabel}.base.eth` : ""}
+  Signer (EOA):  ${eoaAccount.address}${registeredBasename ? `\n  Basename:     ${registeredBasename}` : ""}
   Token:         ${tokenResult.tokenAddress}
   Trade:         https://www.clanker.world/clanker/${tokenResult.tokenAddress}
   Tx:            https://basescan.org/tx/${tokenResult.txHash}
@@ -634,7 +695,7 @@ async function main() {
     timestamp: new Date().toISOString(),
     smartAccountAddress: smartAccount.address,
     eoaAddress: eoaAccount.address,
-    basename: basenameLabel ? `${basenameLabel}.base.eth` : null,
+    basename: registeredBasename,
     tokenAddress: tokenResult.tokenAddress,
     txHash: tokenResult.txHash,
     name: opts.name,
