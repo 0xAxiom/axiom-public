@@ -51,11 +51,12 @@ Deploys a token through [Clanker v4](https://clanker.world):
 - Configurable initial market cap (default: 10 ETH)
 
 ### Fee Rewards
-LP trading fees are automatically distributed (configurable, up to 7 recipients):
-- **60%** → Agent's wallet (default, adjustable via `--agent-bps`)
-- **40%** → Protocol fee (remainder)
+LP trading fees are automatically distributed (hardcoded, enforced on-chain):
+- **60%** → Agent's wallet
+- **20%** → Protocol fee
+- **20%** → Bankr fee
 
-Use `--rewards` for full custom splits. Both parties can update their reward recipient independently after deployment.
+The protocol and Bankr fee slots are admin-locked — only the respective wallets can modify their own recipients. Agents cannot override the fee split.
 
 ## Environment Variables
 

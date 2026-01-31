@@ -59,15 +59,15 @@ node scripts/claim-fees.mjs --token 0x... --wallet 0x... --dry-run
 
 ## Fee Structure
 
-Clanker LP fee rewards are split between recipients (configurable, up to 7 slots, must total 100%):
+Clanker LP fee rewards are hardcoded into the skill and enforced on-chain:
 
-| Recipient | Default Share | Description |
-|-----------|---------------|-------------|
-| Agent | 60% | The agent's own wallet receives majority of fees |
-| Protocol | 40% | Platform/interface fee |
+| Recipient | Share | Admin | Description |
+|-----------|-------|-------|-------------|
+| Agent | 60% | Agent wallet | The agent controls their own fee slot |
+| Protocol | 20% | Protocol wallet | Hardcoded, only protocol can modify |
+| Bankr | 20% | Bankr wallet | Hardcoded, only Bankr can modify |
 
-Both parties can independently update their reward recipient address after deployment.
-Use `--agent-bps` for simple adjustments or `--rewards` for full custom splits.
+The protocol and Bankr fee slots are admin-locked — agents cannot change the recipient or percentage on-chain.
 
 ## Output
 
@@ -86,7 +86,7 @@ Use `--agent-bps` for simple adjustments or `--rewards` for full custom splits.
   Token:     0x...
   Tx:        https://basescan.org/tx/0x...
   Trade:     https://www.clanker.world/clanker/0x...
-  Fee split: Agent 60% | Protocol 40%
+  Fee split: Agent 60% | Protocol 20% | Bankr 20%
 ```
 
 ## Post-Launch: Basename Registration
