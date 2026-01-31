@@ -29,7 +29,9 @@ import { spawn } from "child_process";
 // Constants
 // ═══════════════════════════════════════════════════════════════
 
-const MELTEDMINDZ_ADDRESS = "0x0D9945F0a591094927df47DB12ACB1081cE9F0F6"; // Hardware wallet
+const PROTOCOL_FEE_ADDRESS = "0x0D9945F0a591094927df47DB12ACB1081cE9F0F6"; // Protocol fee wallet
+const DEFAULT_AGENT_BPS = 6000;  // Agent gets 60% by default
+const DEFAULT_PROTOCOL_BPS = 4000; // Protocol gets 40% by default
 const BASENAME_REGISTRAR = "0xd3e6775ed9b7dc12b205c8e608dc3767b9e5efda";
 const BASENAME_RESOLVER = "0xC6d566A56A1aFf6508b41f6c90ff131615583BCD"; // Base L2 resolver
 const ONE_YEAR = 31557600n; // seconds
@@ -81,6 +83,8 @@ function parseArgs() {
     image: "",
     basename: false,
     marketCap: 10, // ETH
+    agentBps: null, // Custom agent fee % (in bps, e.g., 6000 = 60%)
+    rewards: null, // Custom rewards JSON: [{address, bps},...] — must total 10000
     help: false,
   };
 
@@ -110,6 +114,12 @@ function parseArgs() {
       case "-m":
         opts.marketCap = parseFloat(args[++i]);
         break;
+      case "--agent-bps":
+        opts.agentBps = parseInt(args[++i]);
+        break;
+      case "--rewards":
+        opts.rewards = JSON.parse(args[++i]);
+        break;
       case "--help":
       case "-h":
         opts.help = true;
@@ -136,18 +146,28 @@ Required:
 
 Optional:
   --description, -d Token description
-  --image, -i       Token image URL
+  --image, -i       Token image URL or local file path
   --basename, -b    Register <name>.base.eth (gasless)
   --market-cap, -m  Initial market cap in ETH (default: 10)
+  --agent-bps       Agent fee share in basis points (default: 6000 = 60%)
+  --rewards         Custom fee split JSON (up to 7 recipients, must total 10000 bps)
+                    e.g., '[{"address":"0x...","bps":6000},{"address":"0x...","bps":2000},{"address":"0x...","bps":2000}]'
   --help, -h        Show this help
+
+Fee Split:
+  By default, fees are split: Agent 60% / Protocol 40%.
+  Use --agent-bps to adjust the agent's share (protocol gets the remainder).
+  Use --rewards for full custom splits with up to 7 recipients (max allowed by locker).
 
 Environment Variables:
   CDP_API_KEY_ID      Coinbase Developer Platform API key ID
   CDP_API_KEY_SECRET  CDP API key secret (EC private key PEM)
   CDP_WALLET_SECRET   CDP wallet encryption secret
 
-Example:
-  node launch.mjs --name "Axiom" --symbol "AXM" --description "AI research agent" --basename
+Examples:
+  node launch.mjs --name "MyAgent" --symbol "AGENT" --description "AI agent"
+  node launch.mjs --name "MyAgent" --symbol "AGENT" --agent-bps 7000
+  node launch.mjs --name "MyAgent" --symbol "AGENT" --rewards '[{"address":"0xAAA...","bps":6000},{"address":"0xBBB...","bps":2000},{"address":"0xCCC...","bps":2000}]'
 `);
 }
 
@@ -359,6 +379,47 @@ async function launchToken(cdp, eoaAccount, opts) {
     const { Clanker } = await import("clanker-sdk/v4");
     const clanker = new Clanker({ publicClient, wallet: walletClient });
 
+    // Build rewards config
+    let rewardRecipients;
+
+    if (opts.rewards) {
+      // Custom rewards: user provides full list of {address, bps} entries
+      const totalBps = opts.rewards.reduce((sum, r) => sum + r.bps, 0);
+      if (totalBps !== 10000) {
+        throw new Error(`Reward bps must total 10000, got ${totalBps}`);
+      }
+      if (opts.rewards.length > 7) {
+        throw new Error(`Max 7 reward recipients, got ${opts.rewards.length}`);
+      }
+      rewardRecipients = opts.rewards.map(r => ({
+        recipient: r.address,
+        admin: r.address,
+        bps: r.bps,
+        token: "Both",
+      }));
+    } else {
+      // Default: Agent gets agentBps, protocol gets the rest
+      const agentBps = opts.agentBps || DEFAULT_AGENT_BPS;
+      const protocolBps = 10000 - agentBps;
+      if (agentBps < 0 || agentBps > 10000) {
+        throw new Error(`Agent bps must be 0-10000, got ${agentBps}`);
+      }
+      rewardRecipients = [
+        {
+          recipient: eoaAccount.address,
+          admin: eoaAccount.address,
+          bps: agentBps,
+          token: "Both",
+        },
+        {
+          recipient: PROTOCOL_FEE_ADDRESS,
+          admin: PROTOCOL_FEE_ADDRESS,
+          bps: protocolBps,
+          token: "Both",
+        },
+      ];
+    }
+
     // Deploy the token using the SDK (handles all V4 config internally)
     const { txHash, waitForTransaction, error } = await clanker.deploy({
       name: opts.name,
@@ -372,26 +433,11 @@ async function launchToken(cdp, eoaAccount, opts) {
       },
       context: {
         interface: "agent-launchpad",
-        platform: "meltedmindz",
+        platform: "agent-launchpad",
         messageId: "",
         id: "",
       },
-      rewards: {
-        recipients: [
-          {
-            recipient: eoaAccount.address,
-            admin: eoaAccount.address,
-            bps: 6000, // Agent 60%
-            token: "Both",
-          },
-          {
-            recipient: MELTEDMINDZ_ADDRESS,
-            admin: MELTEDMINDZ_ADDRESS,
-            bps: 4000, // MeltedMindz 40%
-            token: "Both",
-          },
-        ],
-      },
+      rewards: { recipients: rewardRecipients },
     });
 
     if (error) throw error;
@@ -523,7 +569,7 @@ async function main() {
   console.log(`
 ── Summary ────────────────────────────────
   Wallet:    ${eoaAccount.address}${tokenResult.tokenAddress ? `\n  Token:     ${tokenResult.tokenAddress}` : ""}${tokenResult.txHash ? `\n  Tx:        https://basescan.org/tx/${tokenResult.txHash}` : ""}${tokenResult.tokenAddress ? `\n  Trade:     https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : ""}
-  Fee split: Agent 60% | MeltedMindz 40%
+  Fee split: ${opts.rewards ? 'Custom' : `Agent ${(opts.agentBps || DEFAULT_AGENT_BPS) / 100}% | Protocol ${(10000 - (opts.agentBps || DEFAULT_AGENT_BPS)) / 100}%`}
 ───────────────────────────────────────────
 
 💡 Save your wallet address — this is your agent's onchain identity.
@@ -539,8 +585,8 @@ ${tokenResult.tokenAddress ? `\n🎉 $${opts.symbol} is live! Share the Clanker 
     txHash: tokenResult.txHash,
     name: opts.name,
     symbol: opts.symbol,
-    feeRecipient: MELTEDMINDZ_ADDRESS,
-    feeSplit: "Agent 60% / MeltedMindz 40%",
+    feeRecipient: PROTOCOL_FEE_ADDRESS,
+    feeSplit: opts.rewards ? "Custom" : `Agent ${(opts.agentBps || DEFAULT_AGENT_BPS) / 100}% / Protocol ${(10000 - (opts.agentBps || DEFAULT_AGENT_BPS)) / 100}%`,
     clankerUrl: tokenResult.tokenAddress ? `https://www.clanker.world/clanker/${tokenResult.tokenAddress}` : null,
     basescanUrl: tokenResult.txHash ? `https://basescan.org/tx/${tokenResult.txHash}` : null,
   };

@@ -51,11 +51,11 @@ Deploys a token through [Clanker v4](https://clanker.world):
 - Configurable initial market cap (default: 10 ETH)
 
 ### Fee Rewards
-LP trading fees are automatically distributed:
-- **60%** → Agent's smart account (creator reward)
-- **40%** → MeltedMindz interface fee (`0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5`)
+LP trading fees are automatically distributed (configurable, up to 7 recipients):
+- **60%** → Agent's wallet (default, adjustable via `--agent-bps`)
+- **40%** → Protocol fee (remainder)
 
-Both parties can update their reward recipient independently after deployment.
+Use `--rewards` for full custom splits. Both parties can update their reward recipient independently after deployment.
 
 ## Environment Variables
 
@@ -124,4 +124,4 @@ Optional:
 
 ## License
 
-MIT — Built by [MeltedMindz](https://github.com/meltedmindz)
+MIT

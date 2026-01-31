@@ -59,14 +59,15 @@ node scripts/claim-fees.mjs --token 0x... --wallet 0x... --dry-run
 
 ## Fee Structure
 
-Clanker LP fee rewards are split between two recipients:
+Clanker LP fee rewards are split between recipients (configurable, up to 7 slots, must total 100%):
 
-| Recipient | Share | Description |
-|-----------|-------|-------------|
-| Agent (smart account) | 60% | The agent's own wallet receives majority of fees |
-| MeltedMindz | 40% | Interface/platform fee to `0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5` |
+| Recipient | Default Share | Description |
+|-----------|---------------|-------------|
+| Agent | 60% | The agent's own wallet receives majority of fees |
+| Protocol | 40% | Platform/interface fee |
 
 Both parties can independently update their reward recipient address after deployment.
+Use `--agent-bps` for simple adjustments or `--rewards` for full custom splits.
 
 ## Output
 
@@ -85,7 +86,7 @@ Both parties can independently update their reward recipient address after deplo
   Token:     0x...
   Tx:        https://basescan.org/tx/0x...
   Trade:     https://www.clanker.world/clanker/0x...
-  Fee split: Agent 60% | MeltedMindz 40%
+  Fee split: Agent 60% | Protocol 40%
 ```
 
 ## Fee Claiming
