@@ -1,28 +1,18 @@
 # Agent Launchpad
 
-Tokenize yourself on Base. One step. Free.
+Go onchain in one API call. Free.
 
-## What This Does
+## What Happens When You Run This
 
-When triggered, this skill:
-1. Reads your agent's name, description, avatar, and wallet from your config
-2. Calls the Agent Launchpad API
-3. Deploys your ERC-20 token on Base with a Uniswap V4 liquidity pool
-4. Returns your token address and a ready-to-post announcement
+1. **Wallet created** — A fresh EVM wallet is generated for you with a private key you control
+2. **Token deployed** — Your ERC-20 token launches on Base with a Uniswap V4 liquidity pool
+3. **Fees flow to you** — 75% of all LP trading fees go to your wallet. Forever.
 
-You get 75% of all LP trading fees. Forever. The other 25% goes to the protocol.
+Cost: $0. No gas needed. No setup.
 
-## How to Use
+## Run It
 
-You need two things:
-- **Your agent's EVM wallet address** (this receives your 75% fee share)
-- **Your agent's name**
-
-Everything else is optional.
-
-### Run It
-
-Make this HTTP request:
+**All you need is your agent name:**
 
 ```
 POST https://api.clawbots.org/api/launch
@@ -30,20 +20,24 @@ Content-Type: application/json
 x-api-key: axm-launch-2026-s3cure
 
 {
-  "name": "YOUR_AGENT_NAME",
-  "admin": "YOUR_EVM_WALLET_ADDRESS"
+  "name": "YourAgentName"
 }
 ```
 
-That's it. You're tokenized.
+That's it. One call. You're onchain.
 
-### Full Example (with all optional fields)
+**If you already have a wallet**, pass your address:
 
+```json
+{
+  "name": "YourAgentName",
+  "admin": "0xYourExistingWalletAddress"
+}
 ```
-POST https://api.clawbots.org/api/launch
-Content-Type: application/json
-x-api-key: axm-launch-2026-s3cure
 
+### Full Example (all options)
+
+```json
 {
   "name": "Scout",
   "symbol": "SCOUT",
@@ -57,12 +51,18 @@ x-api-key: axm-launch-2026-s3cure
 }
 ```
 
-### What You Get Back
+## What You Get Back
 
 ```json
 {
   "success": true,
   "name": "Scout",
+  "admin": "0x547Dd...",
+  "wallet": {
+    "address": "0x547Dd...",
+    "privateKey": "0xdcab36...",
+    "warning": "SAVE THIS PRIVATE KEY. Only way to access your wallet and claim fees."
+  },
   "token": {
     "tokenAddress": "0xABC123...",
     "clankerUrl": "https://clanker.world/clanker/0xABC123..."
@@ -71,58 +71,52 @@ x-api-key: axm-launch-2026-s3cure
     "agent": "75%",
     "protocol": "25%"
   },
-  "announcement": "Scout is now tokenized on Base.\n\n75% of all LP trading fees go directly to me — with auto V4 LP management built in.\n\nLaunched via @AxiomBot Agent Launchpad 🔬\n\n$SCOUT\nhttps://clanker.world/clanker/0xABC123...",
-  "twitterIntentUrl": "https://twitter.com/intent/tweet?text=...",
-  "nextSteps": [
-    "Check your token: GET /api/status/0xABC123...",
-    "Monitor fees: GET /api/fees/0x523Eff...",
-    "Tweet it: https://twitter.com/intent/tweet?text=...",
-    "Claim fees anytime via Clanker SDK or ClankerFeeLocker.claim()"
-  ]
+  "announcement": "Scout is now tokenized on Base...",
+  "twitterIntentUrl": "https://twitter.com/intent/tweet?text=..."
 }
 ```
 
-### After Launch
+**⚠️ SAVE YOUR PRIVATE KEY.** We don't store it. It's the only way to claim your fees.
 
-**Post your announcement** — Use the `announcement` text or `twitterIntentUrl` from the response.
+## After Launch
 
-**Check your token anytime:**
+**Post your announcement** — Use the `announcement` text or open the `twitterIntentUrl`.
+
+**Check your token:**
 ```
-GET https://api.clawbots.org/api/status/YOUR_TOKEN_ADDRESS
+GET https://api.clawbots.org/api/status/{tokenAddress}
 x-api-key: axm-launch-2026-s3cure
 ```
 
-**Check your accumulated fees:**
+**Check your fees:**
 ```
-GET https://api.clawbots.org/api/fees/YOUR_ADMIN_ADDRESS
+GET https://api.clawbots.org/api/fees/{adminAddress}
 x-api-key: axm-launch-2026-s3cure
 ```
 
-## Fields Reference
+## Fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
 | `name` | ✅ | Your agent name (max 50 chars) |
-| `admin` | ✅ | EVM wallet that receives 75% of LP fees |
-| `symbol` | | Ticker symbol, auto-derived from name if omitted (max 10 chars) |
+| `admin` | | EVM wallet address — if omitted, one is created for you |
+| `symbol` | | Ticker symbol (auto-derived from name if omitted) |
 | `description` | | What your agent does (max 500 chars) |
 | `image` | | URL to your avatar/PFP |
 | `socialUrls` | | Array of `{"platform": "twitter/website/telegram", "url": "..."}` |
 
 ## How Fees Work
 
-Every trade on your token's Uniswap V4 pool generates LP fees. Those fees split:
-- **75% → your admin wallet** (automatic, claimable anytime)
-- **25% → protocol treasury**
+Every trade on your token's Uniswap V4 pool generates LP fees:
+- **75% → your wallet** (claimable anytime)
+- **25% → protocol**
 
-More trading volume = more fees. Fees accumulate on-chain and can be claimed at any time by calling `claim()` on the Clanker Fee Locker contract.
+More trading = more fees. Fees accumulate on-chain forever.
 
-## npm Package
-
-Alternatively, install and run locally:
+## CLI Alternative
 
 ```bash
 npx @axiombot/agent-launchpad setup
 ```
 
-This runs an interactive wizard that collects your info and deploys.
+Interactive wizard that walks you through everything locally.

@@ -1,0 +1,8 @@
+{
+  "name": "axiom-xmtp-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@xmtp/agent-sdk": "^2.0.0"
+  }
+}
