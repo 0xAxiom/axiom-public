@@ -544,3 +544,235 @@ To avoid overwhelming the system:
 - Archive completed tasks regularly
 
 This reference provides the foundation for implementing robust agent orchestration in any workspace. Customize the templates and patterns based on your specific needs and domain.
+---
+
+## 🎯 Mission Control Patterns (Advanced)
+
+*Based on proven multi-agent architectures running 10+ agents in production.*
+
+### Heartbeat Staggering
+
+When running multiple cron jobs, stagger them to avoid rate limiting:
+
+```
+# BAD: All at same time
+:00 - twitter-explore
+:00 - lp-monitor  
+:00 - error-check
+→ Rate limit errors!
+
+# GOOD: Staggered by 10 minutes
+:00, :30 - twitter-explore
+:10, :40 - lp-monitor
+:20, :50 - error-check
+→ No conflicts
+```
+
+**Implementation:**
+```bash
+# Convert everyMs jobs to explicit cron for predictable timing
+cron update --job-id <id> --patch '{"schedule": {"kind": "cron", "expr": "10,40 * * * *", "tz": "America/Los_Angeles"}}'
+```
+
+### Enhanced state.json Schema
+
+For real coordination, use structured state:
+
+```json
+{
+  "tasks": [
+    {
+      "id": "task-001",
+      "title": "Create price alert skill",
+      "status": "in_progress",
+      "assignee": "builder",
+      "priority": "high",
+      "createdAt": "2026-02-01T10:00:00Z",
+      "updatedAt": "2026-02-01T12:30:00Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-001",
+      "to": "builder",
+      "from": "scout",
+      "content": "@builder research complete, see findings.md",
+      "delivered": false,
+      "createdAt": "2026-02-01T12:00:00Z"
+    }
+  ],
+  "activities": [
+    {
+      "type": "task_completed",
+      "agent": "scout",
+      "message": "Completed API research for price alerts",
+      "timestamp": "2026-02-01T11:45:00Z"
+    }
+  ],
+  "agentStatus": {
+    "scout": { "status": "idle", "lastTask": "api-research" },
+    "builder": { "status": "busy", "currentTask": "task-001" }
+  }
+}
+```
+
+### Task Lifecycle
+
+Full workflow for task management:
+
+```
+INBOX → ASSIGNED → IN_PROGRESS → REVIEW → DONE
+  ↓        ↓           ↓           ↓
+(new)  (has owner) (being worked) (needs approval)
+                        ↓
+                     BLOCKED
+                   (stuck, needs help)
+```
+
+**Status Transitions:**
+- `inbox` → `assigned`: Main agent assigns to sub-agent
+- `assigned` → `in_progress`: Agent starts work
+- `in_progress` → `review`: Work complete, needs approval
+- `in_progress` → `blocked`: Stuck, needs intervention
+- `review` → `done`: Approved and complete
+- `blocked` → `in_progress`: Unblocked, resumed
+
+### Working Memory Pattern (WORKING.md)
+
+Each agent should maintain a WORKING.md for session continuity:
+
+```markdown
+# WORKING.md — Current Task State
+
+## Current Task
+**Task:** [What you're working on]
+**Status:** [In Progress / Blocked / Review]
+**Started:** [Timestamp]
+
+## What I'm Doing Right Now
+[Detailed context for session resume]
+
+## Context
+[Background info, decisions made, why this approach]
+
+## Next Steps
+1. [Immediate next action]
+2. [Following action]
+3. [Final action]
+
+## Blockers
+[Any issues preventing progress]
+
+---
+*Last updated: [Timestamp]*
+```
+
+**Key Rule:** "Mental notes don't survive session restarts. Only files persist."
+
+### @Mention Notification System
+
+For agent-to-agent communication:
+
+**Creating notifications:**
+```javascript
+// In state.json
+notifications.push({
+  id: `notif-${Date.now()}`,
+  to: "builder",
+  from: "scout",
+  content: "@builder the API docs are ready at research/api-analysis.md",
+  delivered: false,
+  createdAt: new Date().toISOString()
+});
+```
+
+**Checking for notifications (in agent heartbeat):**
+```javascript
+const myNotifications = state.notifications.filter(
+  n => n.to === "scout" && !n.delivered
+);
+if (myNotifications.length > 0) {
+  // Process notifications
+  // Mark as delivered
+}
+```
+
+### Thread Subscriptions
+
+Auto-subscribe agents to task discussions:
+
+```json
+{
+  "tasks": [{
+    "id": "task-001",
+    "subscribers": ["scout", "builder"],
+    "comments": [
+      { "from": "scout", "content": "Found useful API", "at": "..." },
+      { "from": "builder", "content": "Using it now", "at": "..." }
+    ]
+  }]
+}
+```
+
+**Rule:** When an agent comments on or is assigned to a task, they're auto-subscribed to future updates.
+
+### Daily Standup Automation
+
+Automated daily summary format:
+
+```markdown
+📊 DAILY STANDUP — [Date]
+
+✅ COMPLETED TODAY
+• [Agent]: [Task description]
+• [Agent]: [Task description]
+
+🔄 IN PROGRESS
+• [Agent]: [Task] (started [time])
+
+🚫 BLOCKED
+• [Agent]: [Task] — waiting on [dependency]
+
+👀 NEEDS REVIEW
+• [Agent]'s [deliverable]
+
+📝 KEY DECISIONS
+• [Decision made and why]
+```
+
+### Cost Optimization Matrix
+
+Choose models based on task complexity:
+
+| Task Type | Model | Cost/Task | Use Case |
+|-----------|-------|-----------|----------|
+| Monitoring | Haiku | ~$0.001 | Health checks, price alerts |
+| Research | Sonnet | ~$0.01-0.02 | API exploration, doc analysis |
+| Building | Sonnet | ~$0.02-0.05 | Code, scripts, skills |
+| Writing | Opus | ~$0.05-0.15 | Essays, creative work |
+| Coordination | Haiku | ~$0.001 | Routing, status checks |
+
+**Rule:** "Use expensive models for creative work, cheap models for routine."
+
+### Agent Permission Levels
+
+Structure agent autonomy:
+
+| Level | Permissions | Example |
+|-------|-------------|---------|
+| **Intern** | Read only, requires approval for actions | New agents, testing |
+| **Specialist** | Independent in their domain | Scout (research), Watcher (monitoring) |
+| **Lead** | Full autonomy, can delegate | Main agent, senior specialists |
+
+### Scaling to 10+ Agents
+
+Proven pattern for large agent teams:
+
+1. **Start with 2-3**: Main + Scout + Builder
+2. **Add specialists**: Watcher, Writer, Analyst
+3. **Stagger heartbeats**: 2-5 min apart
+4. **Use real-time DB**: Convex or Supabase for coordination
+5. **Build UI**: Visual task management helps at scale
+6. **Daily standups**: Keep visibility across all agents
+
+**The Secret:** "Treat AI agents like team members. Give them roles, memory. Let them collaborate. Hold them accountable."

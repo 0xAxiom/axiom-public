@@ -312,3 +312,51 @@ Found a better workflow pattern? Have a useful template? Submit a PR:
 ## License
 
 MIT — Orchestrate with confidence.
+## Mission Control Patterns
+
+For production-grade multi-agent systems (10+ agents), this skill includes battle-tested patterns from [Mission Control architectures](https://x.com/pbteja1998/status/2017662163540971756):
+
+### Quick Wins
+1. **Stagger heartbeats** — Don't fire all cron jobs at once
+2. **Add WORKING.md** — Session continuity for each agent  
+3. **Structured tasks** — Track status: Inbox→Assigned→In Progress→Review→Done
+4. **@Mentions** — Agent-to-agent notifications
+
+### Heartbeat Schedule Example
+```
+:00, :30 — twitter-explore
+:05, :35 — social-check  
+:10, :40 — lp-monitor
+:20, :50 — error-monitor
+```
+No more rate limit stacking!
+
+### Working Memory
+```markdown
+# WORKING.md
+
+## Current Task
+Building price alert skill
+
+## What I'm Doing
+Implementing Discord webhook integration
+
+## Next Steps
+1. Test webhook
+2. Add error handling
+3. Update README
+```
+
+This file is read at session start, updated constantly, and survives restarts.
+
+### Cost Optimization
+| Task Type | Model | When |
+|-----------|-------|------|
+| Monitoring | Haiku | Health checks, alerts |
+| Research | Sonnet | API exploration |
+| Building | Sonnet | Code, scripts |
+| Creative | Opus | Essays, writing |
+
+"Use expensive models for creative work, cheap models for routine."
+
+See `references/patterns.md` for complete Mission Control implementation guide.

@@ -308,3 +308,24 @@ Input: "@builder: Fix the bug in the price alert system"
 ---
 
 This skill enables systematic, high-quality task execution through proven orchestration patterns. Use these guidelines to coordinate complex workflows and continuously improve through structured learning.
+---
+
+## 🎯 MISSION CONTROL PATTERNS (ADVANCED)
+
+For production-grade multi-agent coordination, see `references/patterns.md` for:
+
+- **Heartbeat Staggering**: Prevent rate limits by offsetting cron jobs
+- **Enhanced state.json**: Tasks, notifications, activities schema
+- **Task Lifecycle**: Inbox→Assigned→In Progress→Review→Done
+- **Working Memory**: WORKING.md for session continuity
+- **@Mentions**: Agent-to-agent notification system
+- **Daily Standups**: Automated progress reports
+- **Cost Optimization**: Model selection by task type
+
+**Quick wins to implement:**
+1. Stagger your cron jobs (5-10 min offsets)
+2. Add WORKING.md to each agent's workspace
+3. Track tasks in state.json with full lifecycle
+4. Use Haiku for monitoring, Opus for creative work
+
+The goal: Turn independent agents into a coordinated team.
