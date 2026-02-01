@@ -126,6 +126,155 @@ export async function deployToken({ name, symbol, admin, description, image, soc
   return { success: false, error: typeof safeError === 'string' ? safeError : 'Deploy failed' };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Image Resolution: Twitter PFP + IPFS Pinning
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Extract Twitter handle from socialUrls array
+ */
+export function extractTwitterHandle(socialUrls) {
+  if (!socialUrls || !Array.isArray(socialUrls)) return null;
+  const twitter = socialUrls.find(s => s.platform === 'twitter' || s.platform === 'x');
+  if (!twitter?.url) return null;
+  // Extract handle from URLs like https://x.com/BagBotX or https://twitter.com/BagBotX
+  const match = twitter.url.match(/(?:twitter\.com|x\.com)\/(@?[\w]+)/i);
+  return match ? match[1].replace(/^@/, '') : null;
+}
+
+/**
+ * Fetch Twitter PFP URL via unavatar.io (no API key needed)
+ * Returns the full-res image URL or null
+ */
+export async function fetchTwitterPFP(handle) {
+  try {
+    // unavatar.io redirects to the actual image — follow redirects to get final URL
+    const resp = await fetch(`https://unavatar.io/twitter/${handle}`, {
+      redirect: 'follow',
+      headers: { 'User-Agent': 'AgentLaunchpad/2.1' },
+    });
+    if (!resp.ok) return null;
+    // Get the image as a buffer
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    if (buffer.length < 1000) return null; // too small = probably an error
+    const contentType = resp.headers.get('content-type') || 'image/png';
+    return { buffer, contentType };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Download image from any URL
+ */
+export async function downloadImage(url) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'AgentLaunchpad/2.1' },
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const contentType = resp.headers.get('content-type') || 'image/png';
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    if (buffer.length > 5 * 1024 * 1024) return null; // 5MB max
+    if (buffer.length < 100) return null;
+    return { buffer, contentType };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pin image buffer to IPFS via Pinata
+ * Returns ipfs:// URL or null
+ */
+export async function pinToIPFS(buffer, contentType, name) {
+  const PINATA_JWT = process.env.PINATA_JWT;
+  if (!PINATA_JWT) return null;
+
+  try {
+    const ext = contentType.includes('png') ? '.png'
+      : contentType.includes('gif') ? '.gif'
+      : contentType.includes('webp') ? '.webp'
+      : '.jpg';
+    
+    const filename = `${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}${ext}`;
+    
+    // Build multipart form data manually
+    const boundary = '----PinataFormBoundary' + randomBytes(8).toString('hex');
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
+    const metadata = `\r\n--${boundary}\r\nContent-Disposition: form-data; name="pinataMetadata"\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ name: filename })}\r\n--${boundary}--\r\n`;
+    
+    const body = Buffer.concat([
+      Buffer.from(header),
+      buffer,
+      Buffer.from(metadata),
+    ]);
+
+    const resp = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PINATA_JWT}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+
+    if (!resp.ok) {
+      console.error(`Pinata error: ${resp.status} ${await resp.text()}`);
+      return null;
+    }
+
+    const data = await resp.json();
+    return `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`;
+  } catch (e) {
+    console.error(`IPFS pin failed: ${e.message}`);
+    return null;
+  }
+}
+
+/**
+ * Resolve image: provided URL → download+pin, or Twitter PFP → download+pin
+ * Returns a permanent IPFS URL or the original URL as fallback
+ */
+export async function resolveImage({ image, socialUrls, name }) {
+  let imageData = null;
+  let source = null;
+
+  // 1. If image URL provided, download it
+  if (image) {
+    imageData = await downloadImage(image);
+    source = 'provided';
+  }
+
+  // 2. If no image, try Twitter PFP
+  if (!imageData) {
+    const handle = extractTwitterHandle(socialUrls);
+    if (handle) {
+      console.log(`📸 No image provided, fetching Twitter PFP for @${handle}...`);
+      imageData = await fetchTwitterPFP(handle);
+      source = 'twitter';
+    }
+  }
+
+  if (!imageData) return null;
+
+  // 3. Pin to IPFS
+  console.log(`📌 Pinning ${source} image to IPFS...`);
+  const ipfsUrl = await pinToIPFS(imageData.buffer, imageData.contentType, name);
+  
+  if (ipfsUrl) {
+    console.log(`✅ Image pinned: ${ipfsUrl}`);
+    return ipfsUrl;
+  }
+
+  // Fallback: return original URL if we had one
+  return image || null;
+}
+
 export async function clankerGet(path) {
   const CLANKER_API_KEY = process.env.CLANKER_API_KEY;
   if (!CLANKER_API_KEY) return { error: 'Not configured' };

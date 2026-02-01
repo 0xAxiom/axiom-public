@@ -1,6 +1,6 @@
 import {
   cors, checkAuth, checkRateLimit, validateLaunchInput,
-  sanitizeString, createAgentWallet, deployToken,
+  sanitizeString, createAgentWallet, deployToken, resolveImage,
   AGENT_ALLOCATION, PROTOCOL_ALLOCATION,
 } from './shared.mjs';
 
@@ -39,10 +39,20 @@ export default async function handler(req, res) {
       body.admin = wallet.address;
     }
 
+    // Resolve image: pin to IPFS, or fetch Twitter PFP if no image provided
+    const resolvedImage = await resolveImage({
+      image: body.image,
+      socialUrls: body.socialUrls || body.socialUrl,
+      name,
+    });
+    if (resolvedImage) {
+      results.image = { url: resolvedImage, pinned: resolvedImage.includes('pinata') || resolvedImage.includes('ipfs') };
+    }
+
     // Deploy token
     const token = await deployToken({
       name, symbol, admin: body.admin, description,
-      image: body.image, socialUrls: body.socialUrls || body.socialUrl,
+      image: resolvedImage || body.image, socialUrls: body.socialUrls || body.socialUrl,
       chainId: body.chainId, poolType: body.poolType, feeType: body.feeType,
       vault: body.vault, devBuy: body.devBuy,
     });
