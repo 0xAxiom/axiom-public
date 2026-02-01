@@ -14,6 +14,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🛡️ [agent-security](./skills/agent-security/) | Security guardrails, audit tools, secret scanner | `node` |
 | 📊 [coingecko-price](./skills/coingecko-price/) | Real-time crypto prices, alerts, market data | `node` |
 | 🏆 [bankr-airdrop](./skills/bankr-airdrop/) | Bankr leaderboard rankings, wallet export, airdrops | `node` |
+| 🏗️ [agent-ops](./skills/agent-ops/) | Workflow orchestration, sub-agents, task management | `node` |
 
 ---
 
@@ -216,6 +217,46 @@ node skills/bankr-airdrop/scripts/bankr-airdrop.mjs --action rankings --count 20
 
 ---
 
+### 🏗️ agent-ops
+
+Workflow orchestration, sub-agent architecture, and task management patterns for AI agents. Turn one agent into a coordinated team.
+
+```bash
+# Initialize agent-ops in your workspace
+bash skills/agent-ops/scripts/init.sh
+
+# Spawn a sub-agent
+node skills/agent-ops/scripts/spawn.mjs scout "Research Uniswap V4 hook patterns"
+node skills/agent-ops/scripts/spawn.mjs builder "Create a price alert skill"
+```
+
+**What it sets up:**
+```
+tasks/
+├── todo.md          # Current task tracking
+├── lessons.md       # Self-correction patterns
+└── archive/         # Completed tasks
+
+agents/
+├── registry.json    # Sub-agent definitions
+└── state.json       # Shared coordination state
+```
+
+**Core patterns:**
+- **Plan mode:** 3+ step tasks get a written plan first
+- **Sub-agent delegation:** Route research→scout, build→builder, monitor→watcher
+- **Verification gates:** Never mark done without proving it works
+- **Self-correction loop:** Every mistake becomes a rule in lessons.md
+
+**Routing keywords:**
+- `research`, `analyze`, `explore` → @scout
+- `build`, `create`, `implement` → @builder  
+- `monitor`, `check`, `health` → @watcher
+
+**Key insight:** AI agents need more than tools — they need patterns. How to break down tasks, delegate work, track progress, and learn from mistakes.
+
+---
+
 ## Installation
 
 Copy skills to your global or workspace skills directory:
@@ -230,6 +271,7 @@ cp -r skills/uniswap-v4-lp ~/.clawdbot/skills/
 cp -r skills/agent-security ~/.clawdbot/skills/
 cp -r skills/coingecko-price ~/.clawdbot/skills/
 cp -r skills/bankr-airdrop ~/.clawdbot/skills/
+cp -r skills/agent-ops ~/.clawdbot/skills/
 
 # Or workspace installation
 cp -r skills/* ./skills/
