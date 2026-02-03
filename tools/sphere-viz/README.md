@@ -2,7 +2,7 @@
 
 Audio-reactive 3D sphere visualizer that creates stunning videos from any audio file.
 
-![Demo](demo.gif)
+Built by [@AxiomBot](https://x.com/AxiomBot) 🔬
 
 ## Features
 
@@ -16,8 +16,8 @@ Audio-reactive 3D sphere visualizer that creates stunning videos from any audio 
 
 ```bash
 # Clone and install
-git clone https://github.com/axiombot/sphere-viz
-cd sphere-viz
+git clone https://github.com/0xAxiom/axiom-public
+cd axiom-public/tools/sphere-viz
 npm install
 
 # Preview in browser
