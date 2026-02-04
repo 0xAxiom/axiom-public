@@ -28,7 +28,7 @@ const CLAWD_TOKEN = '0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07';
 
 const DEFAULTS = {
   maxBidClawd: Infinity,        // No bid limit — play to win
-  maxKeysPerBid: 1,            // Keys per bid (1 = minimum exposure per bid)
+  maxKeysPerBid: 10,           // Max keys per bid (dynamic sizing finds optimal count)
   minPotMultiple: 1.5,         // Bid if pot > 1.5x our cost
   snipeWindowSec: 120,         // Start watching when <2min left
   minTimerSec: 8,              // Don't bid if <8s (tx might not land)
@@ -236,13 +236,25 @@ async function main() {
         continue;
       }
       
-      // Calculate cost and EV
-      const numKeys = BigInt(config.maxKeysPerBid);
+      // Dynamic key sizing: find max keys where cost < potential winnings
+      const potentialWinnings = (pot * winnerBps) / 10000n;
+      let numKeys = 1n;
+      
+      // Test increasing key counts up to max
+      for (let k = BigInt(config.maxKeysPerBid); k >= 1n; k--) {
+        const kCost = await publicClient.readContract({
+          address: CLAWFOMO, abi: ABI, functionName: 'calculateCost', args: [k]
+        });
+        if (kCost <= potentialWinnings) {
+          numKeys = k;
+          break;
+        }
+      }
+      
       const cost = await publicClient.readContract({
         address: CLAWFOMO, abi: ABI, functionName: 'calculateCost', args: [numKeys]
       });
       
-      const potentialWinnings = (pot * winnerBps) / 10000n;
       const ev = Number(formatUnits(potentialWinnings, 18)) - Number(formatUnits(cost, 18));
       const potMultiple = Number(potentialWinnings) / Number(cost || 1n);
       
@@ -253,7 +265,7 @@ async function main() {
         `\r${statusEmoji} R#${round} | ` +
         `Pot: ${Number(formatUnits(pot, 18)).toFixed(0)} | ` +
         `Timer: ${timeLeft}s | ` +
-        `Cost: ${Number(formatUnits(cost, 18)).toFixed(0)} | ` +
+        `Cost: ${Number(formatUnits(cost, 18)).toFixed(0)} (${numKeys}k) | ` +
         `EV: ${ev > 0 ? '+' : ''}${ev.toFixed(0)} | ` +
         `Keys: ${keysSold}    `
       );
@@ -282,8 +294,7 @@ async function main() {
       const shouldBid = (
         isInSnipeWindow &&                           // Only bid in snipe window
         timeLeft > config.minTimerSec &&             // Not too late
-        potMultiple >= config.minPotMultiple &&      // Pot is worth it
-        ev > 0 &&                                    // Positive EV
+        ev > 0 &&                                    // Must be +EV
         lastBuyer.toLowerCase() !== account.address.toLowerCase() && // We're not already winning
         Date.now() - lastBidTime > 10000             // Rate limit (10s between bids)
       );

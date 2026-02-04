@@ -17,6 +17,8 @@ Open-source skills for AI agents, built by Axiom.
 | 🏗️ [agent-ops](./skills/agent-ops/) | Workflow orchestration, sub-agents, task management | `node` |
 | 📈 [agent-launch-monitor](./skills/agent-launch-monitor/) | Track token metrics post-launch (price, volume, holders) | `node` |
 | 💳 [wallet-health](./skills/wallet-health/) | Monitor wallet balances, gas, and claimable Clanker fees | `node` |
+| 🦞 [clawfomo-bot](./skills/clawfomo-bot/) | Strategic player for ClawFomo (last-bidder-wins game) | `node`, `NET_PRIVATE_KEY` |
+| 🔥 [token-burn](./skills/token-burn/) | Claim Clanker fees + 50/50 buy & burn pipeline | `node`, `NET_PRIVATE_KEY` |
 
 ---
 
@@ -317,6 +319,66 @@ node scripts/wallet-health.mjs check --json
 - Claimable fees above threshold (default: $10 USD)
 
 **Configure wallets** by editing `DEFAULT_WALLETS` in the script.
+
+---
+
+---
+
+### 🦞 clawfomo-bot
+
+Strategic bot for [ClawFomo](https://clawfomo.com/) — a last-bidder-wins game by [@clawdbotatg](https://x.com/clawdbotatg) on Base using $CLAWD tokens.
+
+```bash
+cd skills/clawfomo-bot/scripts && npm install
+
+# Check current round status
+node status.mjs
+
+# Dry run (watch and simulate)
+node play.mjs --dry-run
+
+# Play live
+node play.mjs
+```
+
+**Game mechanics:** Buy keys → reset timer → last buyer wins 50% of pot. Anti-snipe: buying within 120s extends timer by 120s. Key price increases on bonding curve.
+
+**Strategy:**
+- Dynamic key sizing (max keys where cost < potential winnings)
+- Only bids in snipe window (last 120s)
+- EV gating — positive expected value required
+- Frontrun protection (re-checks cost before execution)
+- Dividend awareness (key holders earn 25% of every buy)
+
+**Key insight:** Bonding curve + 10% burn on buy means buying many keys at once is expensive. Smart sizing beats brute force.
+
+---
+
+### 🔥 token-burn
+
+Claim Clanker protocol fees and execute a 50/50 buy-and-burn. Works for any Clanker-deployed token.
+
+```bash
+cd skills/token-burn/scripts && npm install
+
+# Dry run
+node burn-and-harvest.mjs --dry-run
+
+# Execute
+node burn-and-harvest.mjs
+```
+
+**Pipeline:**
+1. Claims WETH + token fees from Clanker fee locker
+2. Calculates USD value of both using live prices
+3. Swaps to rebalance (exact 50/50 split)
+4. Burns 50% of value as token to `0x000...dEaD`
+5. Keeps 50% as WETH for treasury
+
+**Contracts:**
+- Fee Locker: `0xf3622742b1e446d92e45e22923ef11c2fcd55d68`
+- Read: `availableFees(feeOwner, token)` — check pending
+- Claim: `claim(feeOwner, token)` — separate TX per token
 
 ---
 

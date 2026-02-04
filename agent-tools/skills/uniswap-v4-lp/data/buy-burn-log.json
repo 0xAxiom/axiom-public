@@ -1,0 +1,11 @@
+[
+  {
+    "timestamp": "2026-02-03T21:18:48.699Z",
+    "wethClaimed": "0.032983826734959136",
+    "wethUsedForBurn": "0.016491913367479568",
+    "tokensBurned": "117959115.059576962768977457",
+    "tokenSymbol": "AXIOM",
+    "burnTx": "0x3b54c78f3045ca5a6dd50ab54fe3590f5b671e9caef00d5b2916dd3211fd040f",
+    "dryRun": false
+  }
+]

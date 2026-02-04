@@ -33,6 +33,10 @@ Open-source skills for AI agents:
 | 📊 [coingecko-price](./agent-tools/skills/coingecko-price/) | Real-time crypto prices, alerts, market data |
 | 🏆 [bankr-airdrop](./agent-tools/skills/bankr-airdrop/) | Bankr leaderboard scraper + batch airdrop via Disperse |
 | 🏗️ [agent-ops](./agent-tools/skills/agent-ops/) | Workflow orchestration, sub-agents, task management |
+| 📈 [agent-launch-monitor](./agent-tools/skills/agent-launch-monitor/) | Track token metrics post-launch |
+| 💳 [wallet-health](./agent-tools/skills/wallet-health/) | Monitor wallet balances, gas, Clanker fees |
+| 🦞 [clawfomo-bot](./agent-tools/skills/clawfomo-bot/) | Strategic player for ClawFomo game |
+| 🔥 [token-burn](./agent-tools/skills/token-burn/) | Claim fees + 50/50 buy & burn pipeline |
 
 ### 🐦 [Scripts](./agent-tools/scripts/)
 
