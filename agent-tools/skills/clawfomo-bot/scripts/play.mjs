@@ -28,10 +28,11 @@ const CLAWD_TOKEN = '0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07';
 
 const DEFAULTS = {
   maxBidClawd: Infinity,        // No bid limit — play to win
-  maxKeysPerBid: 10,           // Max keys per bid (dynamic sizing finds optimal count)
+  maxKeysPerBid: 5,             // Fewer keys = less burn per bid
   minPotMultiple: 1.5,         // Bid if pot > 1.5x our cost
-  snipeWindowSec: 120,         // Start watching when <2min left
-  minTimerSec: 8,              // Don't bid if <8s (tx might not land)
+  snipeWindowSec: 120,          // Enter snipe window at 120s
+  minTimerSec: 6,              // Don't bid if <6s (tx might not land)
+  maxBidsPerRound: Infinity,   // No bid cap — cumulative EV controls everything
   maxRoundLoss: Infinity,      // No round limit
   pollIntervalMs: 3000,        // Check every 3 seconds
   maxTotalLoss: Infinity,      // No session limit
@@ -194,6 +195,7 @@ async function main() {
   let roundSpent = 0n;
   let currentRoundId = 0n;
   let bidCount = 0;
+  let roundBidCount = 0;
   let lastBidTime = 0;
   
   console.log('\n👀 Watching for opportunities...\n');
@@ -226,6 +228,7 @@ async function main() {
         }
         currentRoundId = round;
         roundSpent = 0n;
+        roundBidCount = 0;
         console.log(`\n📊 Round #${round} started`);
       }
       
@@ -260,13 +263,18 @@ async function main() {
       
       // Status line
       const isInSnipeWindow = timeLeft <= config.snipeWindowSec;
+      const projectedPotStatus = pot + (cost * 65n / 100n);
+      const projectedWinStatus = (projectedPotStatus * winnerBps) / 10000n;
+      const totalIfBid = roundSpent + cost;
+      const rEv = Number(formatUnits(projectedWinStatus - totalIfBid, 18));
       const statusEmoji = isInSnipeWindow ? '🎯' : '👀';
       process.stdout.write(
         `\r${statusEmoji} R#${round} | ` +
         `Pot: ${Number(formatUnits(pot, 18)).toFixed(0)} | ` +
         `Timer: ${timeLeft}s | ` +
         `Cost: ${Number(formatUnits(cost, 18)).toFixed(0)} (${numKeys}k) | ` +
-        `EV: ${ev > 0 ? '+' : ''}${ev.toFixed(0)} | ` +
+        `Spent: ${Number(formatUnits(roundSpent, 18)).toFixed(0)} | ` +
+        `RndEV: ${rEv > 0 ? '+' : ''}${rEv.toFixed(0)} | ` +
         `Keys: ${keysSold}    `
       );
       
@@ -290,11 +298,19 @@ async function main() {
         continue;
       }
       
+      // CUMULATIVE ROUND EV: Would we profit if we win AFTER this bid?
+      // potentialWinnings = 50% of pot (AFTER our bid grows it)
+      // We need: potentialWinnings > roundSpent + thisBidCost
+      const projectedPot = pot + (cost * 65n / 100n); // ~65% of our bid reaches pot (after 10% burn + 25% dividends)
+      const projectedWinnings = (projectedPot * winnerBps) / 10000n;
+      const totalIfWeBid = roundSpent + cost;
+      const roundEv = Number(formatUnits(projectedWinnings - totalIfWeBid, 18));
+      
       // THE DECISION: Should we bid?
       const shouldBid = (
         isInSnipeWindow &&                           // Only bid in snipe window
         timeLeft > config.minTimerSec &&             // Not too late
-        ev > 0 &&                                    // Must be +EV
+        roundEv > 0 &&                               // Round is still +EV after ALL our spending
         lastBuyer.toLowerCase() !== account.address.toLowerCase() && // We're not already winning
         Date.now() - lastBidTime > 10000             // Rate limit (10s between bids)
       );
@@ -305,7 +321,7 @@ async function main() {
         console.log(`   Cost: ${formatUnits(cost, 18)} CLAWD`);
         console.log(`   Pot: ${formatUnits(pot, 18)} CLAWD`);
         console.log(`   Potential win: ${formatUnits(potentialWinnings, 18)} CLAWD`);
-        console.log(`   EV: ${ev > 0 ? '+' : ''}${ev.toFixed(2)} CLAWD`);
+        console.log(`   Round EV: ${roundEv > 0 ? '+' : ''}${roundEv.toFixed(0)} CLAWD (spent ${Number(formatUnits(roundSpent, 18)).toFixed(0)} so far)`);
         console.log(`   Timer: ${timeLeft}s`);
         
         if (config.dryRun) {
@@ -333,7 +349,10 @@ async function main() {
             totalSpent += cost;
             roundSpent += cost;
             bidCount++;
+            roundBidCount++;
             lastBidTime = Date.now();
+            
+            console.log(`   📈 Round spend: ${Number(formatUnits(roundSpent, 18)).toFixed(0)} CLAWD (${roundBidCount} bids)`);
             
             console.log(`   📊 Total spent: ${formatUnits(totalSpent, 18)} CLAWD (${bidCount} bids)`);
           } catch (err) {
