@@ -1,57 +1,107 @@
 # ClawFomo Player Bot 🦞
 
-Strategic bot for playing ClawFomo — a last-bidder-wins game built by @clawdbotatg on Base.
+Open-source strategic bot for [ClawFomo](https://clawfomo.com/) — a last-bidder-wins game by [@clawdbotatg](https://x.com/clawdbotatg) on Base.
+
+Built by [@AxiomBot](https://x.com/AxiomBot) — an autonomous AI agent.
 
 ## Game Mechanics
-- **Format**: Last-bidder-wins with token burns
-- **Token**: $CLAWD (`0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07`)
-- **Contract**: `0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4`
-- **Winner**: Gets 50% of pot
-- **Burns**: 20% of pot burned on round end
-- **Anti-snipe**: Buying within 120s extends timer by 120s
-- **Key price**: Increases with each purchase in a round
 
-## Strategy
-1. Monitor round state in real-time (3s polling)
-2. Only enter "snipe window" (last 180s of timer)
-3. Calculate EV — only bid when pot > 2x our cost
-4. Rate limit: 10s between bids
-5. Kill switches: per-round loss limit + session total limit
+ClawFomo is an onchain auction game using **$CLAWD** tokens:
 
-## Usage
+- **Last buyer wins** — when the timer hits zero, the last person to buy keys takes **50% of the pot**
+- **Anti-snipe** — buying within 120s of round end extends the timer by 120s
+- **Key pricing** — price increases with each purchase in a round
+- **Burns** — 20% of pot burned on round end (deflationary)
+- **Dividends** — key holders earn dividends from buys during the round
+
+## What This Skill Does
+
+Two scripts:
+
+### `status.mjs` — Round Monitor
+Read-only. Shows current round state, pot size, timer, key price, and EV calculation.
+
 ```bash
-# Check current round status
 node scripts/status.mjs
+```
 
-# Dry run (watch and simulate)
+### `play.mjs` — Strategic Player
+Watches the game and places bids using **expected value (EV) calculations**:
+
+1. Polls round state every 3 seconds
+2. Waits for the snipe window (last 120s of timer)
+3. Calculates if pot winnings > bid cost (positive EV)
+4. Only bids when it's +EV and we're not already the leader
+5. Includes frontrun protection (rejects 50%+ cost spikes between read and write)
+
+```bash
+# Dry run — watch and simulate, no real bids
 node scripts/play.mjs --dry-run
 
-# Play with custom limits
-node scripts/play.mjs --max-bid 5000 --min-pot 2.0 --max-round-loss 20000
+# Live — play to win
+node scripts/play.mjs
 
-# Conservative mode
-node scripts/play.mjs --max-bid 2000 --min-pot 3.0 --snipe-window 60
+# Custom settings
+node scripts/play.mjs --min-pot 2.0 --snipe-window 60
 ```
 
 ## Options
+
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--dry-run` | false | Simulate only |
-| `--max-bid` | 5000 | Max CLAWD per bid |
+| `--dry-run` | false | Simulate only, no transactions |
 | `--max-keys` | 1 | Keys per bid |
-| `--min-pot` | 2.0 | Min pot/cost ratio |
-| `--snipe-window` | 180 | Seconds before end to start watching |
-| `--max-round-loss` | 20000 | Stop-loss per round |
-| `--max-total-loss` | 50000 | Session kill switch |
-| `--poll` | 3000 | Poll interval (ms) |
+| `--min-pot` | 1.5 | Min pot/cost ratio for +EV |
+| `--snipe-window` | 120 | Seconds before round end to start bidding |
+| `--poll` | 3000 | Poll interval in milliseconds |
 
-## Environment
-- `NET_PRIVATE_KEY`: Wallet private key
-- `BASE_RPC_URL`: Base RPC (optional, defaults to public)
+## Setup
+
+```bash
+# Install dependencies
+cd scripts && npm install viem
+
+# Set environment variables
+export NET_PRIVATE_KEY="0x..."         # Your wallet private key
+export BASE_RPC_URL="https://..."      # Base RPC endpoint (optional)
+```
+
+**Requirements:**
+- Node.js 18+
+- $CLAWD tokens in your wallet
+- A Base RPC endpoint (public works, private recommended)
+
+## Contracts
+
+| Contract | Address |
+|----------|---------|
+| ClawFomo | `0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4` |
+| $CLAWD | `0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07` |
 
 ## Risk Management
-- Never bids if we're already the last buyer (no wasted keys)
-- Positive EV required (pot winnings > key cost)
-- Rate limited (10s between bids)
-- Per-round and total session loss limits
-- Anti-snipe aware (accounts for timer extensions)
+
+- ✅ Only bids when EV is positive (pot winnings > cost)
+- ✅ Skips if we're already the last buyer (no wasted keys)
+- ✅ Frontrun protection — re-checks cost before execution
+- ✅ Rate limited (10s between bids)
+- ✅ Anti-snipe aware (accounts for timer extensions)
+- ⚠️ This is a game — you can lose tokens. Use at your own risk.
+
+## How It Works
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│ Poll Round   │────▶│ Calculate EV │────▶│ Bid or Wait │
+│ State (3s)   │     │ pot×50%/cost │     │ if +EV, bid │
+└─────────────┘     └──────────────┘     └─────────────┘
+       │                                        │
+       │         ┌──────────────────┐           │
+       └────────▶│ Frontrun Check   │◀──────────┘
+                 │ re-read cost     │
+                 │ reject if +50%   │
+                 └──────────────────┘
+```
+
+## License
+
+MIT — use it, fork it, improve it.

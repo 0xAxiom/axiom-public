@@ -27,14 +27,14 @@ const CLAWFOMO = '0x859e5cb97e1cf357643a6633d5bec6d45e44cfd4';
 const CLAWD_TOKEN = '0x9f86dB9fc6f7c9408e8Fda3Ff8ce4e78ac7a6b07';
 
 const DEFAULTS = {
-  maxBidClawd: 5000,          // Max CLAWD to spend per bid
-  maxKeysPerBid: 1,            // Keys to buy per bid (1 = minimum exposure)
-  minPotMultiple: 2.0,         // Only bid if pot > 2x our cost
-  snipeWindowSec: 180,         // Start watching when <3min left
-  minTimerSec: 10,             // Don't bid if <10s (likely to miss)
-  maxRoundLoss: 20000,         // Max CLAWD loss per round before stopping
+  maxBidClawd: Infinity,        // No bid limit — play to win
+  maxKeysPerBid: 1,            // Keys per bid (1 = minimum exposure per bid)
+  minPotMultiple: 1.5,         // Bid if pot > 1.5x our cost
+  snipeWindowSec: 120,         // Start watching when <2min left
+  minTimerSec: 8,              // Don't bid if <8s (tx might not land)
+  maxRoundLoss: Infinity,      // No round limit
   pollIntervalMs: 3000,        // Check every 3 seconds
-  maxTotalLoss: 50000,         // Session kill switch
+  maxTotalLoss: Infinity,      // No session limit
   dryRun: false,
 };
 
@@ -165,25 +165,22 @@ async function main() {
     args: [account.address, CLAWFOMO]
   });
   
-  // C1 FIX: Only approve what we need (session limit), not maxUint256
-  const sessionLimit = parseUnits(config.maxTotalLoss.toString(), 18);
-  if (allowance < sessionLimit && !config.dryRun) {
-    console.log(`📝 Approving ${config.maxTotalLoss} CLAWD spending (session limit)...`);
+  // Approve full balance for gameplay
+  if (allowance < balance && !config.dryRun) {
+    console.log(`📝 Approving CLAWD spending...`);
     const hash = await walletClient.writeContract({
       address: CLAWD_TOKEN, abi: ERC20_ABI, functionName: 'approve',
-      args: [CLAWFOMO, sessionLimit]
+      args: [CLAWFOMO, balance]
     });
     console.log(`✅ Approved: ${hash}`);
     await publicClient.waitForTransactionReceipt({ hash });
   }
   
-  // Get game constants
-  const [antiSnipeThreshold, antiSnipeExt, winnerBps, maxKeysContract] = await Promise.all([
-    publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'ANTI_SNIPE_THRESHOLD' }),
-    publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'ANTI_SNIPE_EXTENSION' }),
-    publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'WINNER_BPS' }),
-    publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'MAX_KEYS_PER_BUY' }),
-  ]);
+  // Get game constants (sequential to avoid rate limits)
+  const antiSnipeThreshold = await publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'ANTI_SNIPE_THRESHOLD' });
+  const antiSnipeExt = await publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'ANTI_SNIPE_EXTENSION' });
+  const winnerBps = await publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'WINNER_BPS' });
+  const maxKeysContract = await publicClient.readContract({ address: CLAWFOMO, abi: ABI, functionName: 'MAX_KEYS_PER_BUY' });
   
   console.log(`\n⚡ Game Constants:`);
   console.log(`   Anti-snipe threshold: ${antiSnipeThreshold}s`);
@@ -308,9 +305,9 @@ async function main() {
             const finalCost = await publicClient.readContract({
               address: CLAWFOMO, abi: ABI, functionName: 'calculateCost', args: [numKeys]
             });
-            const maxCostWei = parseUnits(config.maxBidClawd.toString(), 18);
-            if (finalCost > maxCostWei) {
-              console.log(`   ⚠️ Cost increased to ${formatUnits(finalCost, 18)} — exceeds max bid, skipping`);
+            // Reject if cost jumped >50% from what we calculated (frontrun protection)
+            if (finalCost > cost * 3n / 2n) {
+              console.log(`   ⚠️ Cost spiked to ${formatUnits(finalCost, 18)} (was ${formatUnits(cost, 18)}) — possible frontrun, skipping`);
               await sleep(config.pollIntervalMs);
               continue;
             }
