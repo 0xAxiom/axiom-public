@@ -17,7 +17,7 @@
  * - Track bid frequency to detect other snipers
  */
 
-import { createPublicClient, createWalletClient, http, formatUnits, parseUnits, maxUint256 } from 'viem';
+import { createPublicClient, createWalletClient, http, formatUnits, parseUnits } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 
@@ -165,11 +165,13 @@ async function main() {
     args: [account.address, CLAWFOMO]
   });
   
-  if (allowance < balance && !config.dryRun) {
-    console.log('📝 Approving CLAWD spending...');
+  // C1 FIX: Only approve what we need (session limit), not maxUint256
+  const sessionLimit = parseUnits(config.maxTotalLoss.toString(), 18);
+  if (allowance < sessionLimit && !config.dryRun) {
+    console.log(`📝 Approving ${config.maxTotalLoss} CLAWD spending (session limit)...`);
     const hash = await walletClient.writeContract({
       address: CLAWD_TOKEN, abi: ERC20_ABI, functionName: 'approve',
-      args: [CLAWFOMO, maxUint256]
+      args: [CLAWFOMO, sessionLimit]
     });
     console.log(`✅ Approved: ${hash}`);
     await publicClient.waitForTransactionReceipt({ hash });
@@ -206,8 +208,12 @@ async function main() {
       });
       
       const [round, pot, endTime, lastBuyer, keysSold, keyPrice, isActive] = roundInfo;
+      // H2 FIX: Validate timer with sanity bounds
       const now = BigInt(Math.floor(Date.now() / 1000));
-      const timeLeft = endTime > now ? Number(endTime - now) : 0;
+      let timeLeft = 0;
+      if (endTime > now && endTime < now + 86400n) { // Max 24h validity
+        timeLeft = Number(endTime - now);
+      }
       
       // New round detected
       if (round !== currentRoundId) {
@@ -298,6 +304,17 @@ async function main() {
           console.log(`   🔮 DRY RUN — would have bid`);
         } else {
           try {
+            // H1 FIX: Re-check cost right before bidding (slippage protection)
+            const finalCost = await publicClient.readContract({
+              address: CLAWFOMO, abi: ABI, functionName: 'calculateCost', args: [numKeys]
+            });
+            const maxCostWei = parseUnits(config.maxBidClawd.toString(), 18);
+            if (finalCost > maxCostWei) {
+              console.log(`   ⚠️ Cost increased to ${formatUnits(finalCost, 18)} — exceeds max bid, skipping`);
+              await sleep(config.pollIntervalMs);
+              continue;
+            }
+            
             const hash = await walletClient.writeContract({
               address: CLAWFOMO, abi: ABI, functionName: 'buyKeys', args: [numKeys]
             });
