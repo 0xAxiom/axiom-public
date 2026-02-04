@@ -18,7 +18,7 @@ The skill includes both the npm package source and OpenClaw integration.
 
 ### As npm package:
 ```bash
-npm install @axiom/x402-gate
+npm install @axiombotx/x402-gate
 ```
 
 ### As OpenClaw skill:
@@ -30,7 +30,7 @@ This directory is the skill - copy or link it into your OpenClaw skills folder.
 
 ```javascript
 import express from 'express';
-import { x402Gate } from '@axiom/x402-gate';
+import { x402Gate } from '@axiombotx/x402-gate';
 
 const app = express();
 
@@ -148,7 +148,7 @@ PORT=3000
 ### Price Conversion
 
 ```javascript
-import { parsePriceToUsdc, formatUsdcToPrice } from '@axiom/x402-gate';
+import { parsePriceToUsdc, formatUsdcToPrice } from '@axiombotx/x402-gate';
 
 // Convert prices
 const usdcUnits = parsePriceToUsdc('$0.01');  // '10000'
@@ -158,7 +158,7 @@ const priceDisplay = formatUsdcToPrice(10000); // '$0.01'
 ### Payment Verification
 
 ```javascript
-import { verifyPayment } from '@axiom/x402-gate';
+import { verifyPayment } from '@axiombotx/x402-gate';
 
 const result = await verifyPayment(
   paymentHash,

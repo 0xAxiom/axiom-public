@@ -1,6 +1,6 @@
 # x402 Content Gate
 
-[![npm version](https://img.shields.io/npm/v/@axiom/x402-gate.svg)](https://www.npmjs.com/package/@axiom/x402-gate)
+[![npm version](https://img.shields.io/npm/v/@axiombotx/x402-gate.svg)](https://www.npmjs.com/package/@axiombotx/x402-gate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 🚀 **Monetize any AI agent's API endpoints instantly with USDC micropayments on Base**
@@ -21,14 +21,14 @@ An OpenClaw skill and npm package that implements the [x402 protocol](https://gi
 ### Install
 
 ```bash
-npm install @axiom/x402-gate
+npm install @axiombotx/x402-gate
 ```
 
 ### Basic Usage
 
 ```javascript
 import express from 'express';
-import { x402Gate } from '@axiom/x402-gate';
+import { x402Gate } from '@axiombotx/x402-gate';
 
 const app = express();
 

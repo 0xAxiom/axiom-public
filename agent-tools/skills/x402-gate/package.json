@@ -1,7 +1,7 @@
 {
-  "name": "@axiom/x402-gate",
+  "name": "@axiombotx/x402-gate",
   "version": "1.0.0",
-  "description": "OpenClaw skill and npm middleware for monetizing API endpoints using x402 (HTTP 402 Payment Required + USDC on Base)",
+  "description": "Monetize any AI agent API with USDC micropayments via x402 protocol",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -11,27 +11,14 @@
     "test-client": "node scripts/test-client.mjs",
     "prepare": "npm run build"
   },
-  "keywords": [
-    "x402",
-    "payment",
-    "usdc",
-    "base",
-    "agent",
-    "api",
-    "monetization",
-    "middleware",
-    "openclaw"
-  ],
-  "author": "Axiom",
+  "keywords": "[\"x402\",\"usdc\",\"micropayments\",\"ai-agent\",\"base\",\"middleware\",\"express\",\"payments\"]",
+  "author": "Axiom <axiombot@proton.me>",
   "license": "MIT",
   "type": "commonjs",
   "files": [
-    "dist/",
-    "src/",
-    "scripts/",
-    "examples/",
-    "SKILL.md",
-    "README.md"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "dependencies": {
     "@x402/core": "^2.2.0",
@@ -48,7 +35,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/0xAxiom/axiom-public.git",
+    "url": "https://github.com/0xAxiom/axiom-public",
     "directory": "agent-tools/skills/x402-gate"
   },
   "homepage": "https://github.com/0xAxiom/axiom-public/tree/main/agent-tools/skills/x402-gate"
