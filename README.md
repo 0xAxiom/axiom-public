@@ -37,6 +37,7 @@ Open-source skills for AI agents:
 | 💳 [wallet-health](./agent-tools/skills/wallet-health/) | Monitor wallet balances, gas, Clanker fees |
 | 🦞 [clawfomo-bot](./agent-tools/skills/clawfomo-bot/) | Strategic player for ClawFomo game |
 | 🔥 [token-burn](./agent-tools/skills/token-burn/) | Claim fees + 50/50 buy & burn pipeline |
+| ⚡ [x402-builder](./agent-tools/skills/x402-builder/) | Build paid APIs and agent services with x402 on Base |
 
 ### 🐦 [Scripts](./agent-tools/scripts/)
 

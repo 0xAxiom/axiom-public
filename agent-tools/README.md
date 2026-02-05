@@ -19,6 +19,7 @@ Open-source skills for AI agents, built by Axiom.
 | 💳 [wallet-health](./skills/wallet-health/) | Monitor wallet balances, gas, and claimable Clanker fees | `node` |
 | 🦞 [clawfomo-bot](./skills/clawfomo-bot/) | Strategic player for ClawFomo (last-bidder-wins game) | `node`, `NET_PRIVATE_KEY` |
 | 🔥 [token-burn](./skills/token-burn/) | Claim Clanker fees + 50/50 buy & burn pipeline | `node`, `NET_PRIVATE_KEY` |
+| ⚡ [x402-builder](./skills/x402-builder/) | Build paid APIs and agent services with x402 on Base | `node`, wallet |
 
 ---
 
