@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_DIR="$HOME/.config/gateway-watchdog"
-PLIST_NAME="com.axiom.gateway-watchdog"
+PLIST_NAME="com.gateway-watchdog"
 PLIST_DEST="$HOME/Library/LaunchAgents/$PLIST_NAME.plist"
 
 echo "🐕 Gateway Watchdog Installer"
@@ -27,10 +27,42 @@ fi
 chmod +x "$SCRIPT_DIR/watchdog.sh"
 
 # Generate plist with correct paths
-sed -e "s|WATCHDOG_PATH|$SCRIPT_DIR|g" \
-    -e "s|LOG_PATH|$CONFIG_DIR|g" \
-    -e "s|HOME_PATH|$HOME|g" \
-    "$SCRIPT_DIR/com.axiom.gateway-watchdog.plist" > "$PLIST_DEST"
+cat > "$PLIST_DEST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$PLIST_NAME</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>$SCRIPT_DIR/watchdog.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>$CONFIG_DIR/watchdog-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>$CONFIG_DIR/watchdog-stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+        <key>HOME</key>
+        <string>$HOME</string>
+    </dict>
+</dict>
+</plist>
+EOF
 
 echo "✅ Installed launchd plist at $PLIST_DEST"
 

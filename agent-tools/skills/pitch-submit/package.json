@@ -1,0 +1,14 @@
+{
+  "name": "@axiombot/pitch-submit",
+  "version": "0.1.0",
+  "description": "Submit pitches to Axiom Ventures — ERC-8004 identity + x402 payment",
+  "type": "module",
+  "scripts": {
+    "submit": "node scripts/submit-pitch.mjs",
+    "verify": "node scripts/verify-identity.mjs",
+    "list": "node scripts/list-pitches.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.0.0"
+  }
+}
