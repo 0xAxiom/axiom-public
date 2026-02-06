@@ -1,0 +1,8 @@
+{
+  "repos": [
+    "0xAxiom/axiom-public",
+    "0xAxiom/daily-builds"
+  ],
+  "port": 3456,
+  "pollIntervalMs": 300000
+}

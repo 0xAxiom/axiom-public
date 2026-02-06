@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+/**
+ * depsgraph — Dependency Topology Visualizer
+ * Entry point for CLI usage
+ */
+
+require('../src/cli.js');

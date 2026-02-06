@@ -1,0 +1,52 @@
+# PR Review Stream Configuration
+
+github:
+  # Required: GitHub Personal Access Token with 'repo' scope
+  token: ${GITHUB_TOKEN}
+  
+  # Optional: For GitHub App authentication
+  # app_id: ${GITHUB_APP_ID}
+  # private_key: ${GITHUB_PRIVATE_KEY}
+  
+  # Webhook signature verification secret
+  webhook_secret: ${GITHUB_WEBHOOK_SECRET}
+
+ollama:
+  # Ollama server URL
+  host: http://localhost:11434
+  
+  # Model selection by complexity tier
+  models:
+    # Small PRs (< 50 lines)
+    fast: deepseek-r1:latest
+    
+    # Medium PRs (50-200 lines)
+    balanced: gemma3:27b
+    
+    # Large PRs, security, complex logic
+    thorough: qwq:latest
+
+review:
+  # Maximum files to review per PR
+  max_files: 50
+  
+  # Max tokens per file review
+  max_tokens_per_file: 4000
+  
+  # Review timeout in seconds
+  timeout_seconds: 300
+  
+  # Supported languages for AST chunking (future)
+  languages:
+    - typescript
+    - javascript
+    - python
+    - rust
+    - go
+
+rate_limits:
+  # GitHub API rate limit buffer
+  github_comments_per_minute: 30
+  
+  # Max concurrent reviews
+  concurrent_reviews: 3

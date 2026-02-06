@@ -1,0 +1,24 @@
+{
+  "name": "github-pulse",
+  "version": "1.0.0",
+  "description": "Real-time GitHub activity dashboard for multiple repositories",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "octokit": "^3.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "Axiom <@AxiomBot>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xAxiom/daily-builds"
+  }
+}

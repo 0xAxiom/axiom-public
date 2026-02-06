@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GasFlow - Multi-Chain Gas Optimizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #0a0a0f; color: #e5e5e5; font-family: 'Inter', system-ui, sans-serif; }
+    .glow { box-shadow: 0 0 20px rgba(0, 229, 255, 0.15); }
+    .card { background: linear-gradient(135deg, #1a1a2e 0%, #16162a 100%); border: 1px solid #2a2a4a; }
+    .accent { color: #00E5FF; }
+    .eth-color { color: #627EEA; }
+    .base-color { color: #0052FF; }
+    .arb-color { color: #28A0F0; }
+    .poly-color { color: #8247E5; }
+    .op-color { color: #FF0420; }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-3">
+        <div class="text-3xl">⛽</div>
+        <div>
+          <h1 class="text-2xl font-bold accent">GasFlow</h1>
+          <p class="text-sm text-gray-400">Multi-Chain Gas Optimizer</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-sm">
+        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        <span class="text-gray-400">Live • Updated 2s ago</span>
+      </div>
+    </div>
+
+    <!-- Gas Cards Grid -->
+    <div class="grid grid-cols-5 gap-4 mb-8">
+      <!-- Ethereum -->
+      <div class="card rounded-xl p-4 glow">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-full bg-[#627EEA]/20 flex items-center justify-center">
+            <span class="text-lg">Ξ</span>
+          </div>
+          <span class="font-semibold eth-color">Ethereum</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">0.59</div>
+        <div class="text-sm text-gray-400">gwei</div>
+        <div class="mt-3 flex items-center gap-1 text-green-400 text-sm">
+          <span>↓ 12%</span>
+          <span class="text-gray-500">vs 1h ago</span>
+        </div>
+      </div>
+
+      <!-- Base -->
+      <div class="card rounded-xl p-4 glow">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-full bg-[#0052FF]/20 flex items-center justify-center">
+            <span class="text-lg">🔵</span>
+          </div>
+          <span class="font-semibold base-color">Base</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">0.004</div>
+        <div class="text-sm text-gray-400">gwei</div>
+        <div class="mt-3 flex items-center gap-1 text-green-400 text-sm">
+          <span>↓ 8%</span>
+          <span class="text-gray-500">vs 1h ago</span>
+        </div>
+      </div>
+
+      <!-- Arbitrum -->
+      <div class="card rounded-xl p-4 glow">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-full bg-[#28A0F0]/20 flex items-center justify-center">
+            <span class="text-lg">🔷</span>
+          </div>
+          <span class="font-semibold arb-color">Arbitrum</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">0.02</div>
+        <div class="text-sm text-gray-400">gwei</div>
+        <div class="mt-3 flex items-center gap-1 text-yellow-400 text-sm">
+          <span>→ 2%</span>
+          <span class="text-gray-500">vs 1h ago</span>
+        </div>
+      </div>
+
+      <!-- Polygon -->
+      <div class="card rounded-xl p-4 glow">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-full bg-[#8247E5]/20 flex items-center justify-center">
+            <span class="text-lg">🟣</span>
+          </div>
+          <span class="font-semibold poly-color">Polygon</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">359</div>
+        <div class="text-sm text-gray-400">gwei</div>
+        <div class="mt-3 flex items-center gap-1 text-red-400 text-sm">
+          <span>↑ 15%</span>
+          <span class="text-gray-500">vs 1h ago</span>
+        </div>
+      </div>
+
+      <!-- Optimism -->
+      <div class="card rounded-xl p-4 glow">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-full bg-[#FF0420]/20 flex items-center justify-center">
+            <span class="text-lg">🔴</span>
+          </div>
+          <span class="font-semibold op-color">Optimism</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">0.00005</div>
+        <div class="text-sm text-gray-400">gwei</div>
+        <div class="mt-3 flex items-center gap-1 text-green-400 text-sm">
+          <span>↓ 5%</span>
+          <span class="text-gray-500">vs 1h ago</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-3 gap-6">
+      <!-- Chart -->
+      <div class="col-span-2 card rounded-xl p-6 glow">
+        <h2 class="text-lg font-semibold mb-4">Gas Price History (2h)</h2>
+        <canvas id="gasChart" height="200"></canvas>
+      </div>
+
+      <!-- Predictions -->
+      <div class="card rounded-xl p-6 glow">
+        <h2 class="text-lg font-semibold mb-4">🔮 Predictions</h2>
+        <div class="space-y-4">
+          <div class="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-green-400 font-semibold">WAIT</span>
+              <span class="text-xs bg-green-500/20 px-2 py-0.5 rounded text-green-400">85% confidence</span>
+            </div>
+            <p class="text-sm text-gray-400">Gas trending down. Expected 20% savings in 60 minutes.</p>
+          </div>
+          
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">15 min</span>
+              <span class="accent">0.53 gwei (-10%)</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">30 min</span>
+              <span class="accent">0.50 gwei (-15%)</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">60 min</span>
+              <span class="accent">0.47 gwei (-20%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Optimizer -->
+      <div class="col-span-2 card rounded-xl p-6 glow">
+        <h2 class="text-lg font-semibold mb-4">🗺️ Route Optimizer</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-black/30 rounded-lg p-4">
+            <div class="text-sm text-gray-400 mb-2">Best chain for swap</div>
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🔴</span>
+              <div>
+                <div class="font-semibold op-color">Optimism</div>
+                <div class="text-sm text-gray-400">$0.0001 gas cost</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-black/30 rounded-lg p-4">
+            <div class="text-sm text-gray-400 mb-2">Savings vs Ethereum</div>
+            <div class="text-2xl font-bold text-green-400">99.98%</div>
+            <div class="text-sm text-gray-400">~$2.50 saved per tx</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="card rounded-xl p-6 glow">
+        <h2 class="text-lg font-semibold mb-4">📊 Network Stats</h2>
+        <div class="space-y-3">
+          <div class="flex justify-between">
+            <span class="text-gray-400">Pending Txs</span>
+            <span>1,847</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Avg Block Time</span>
+            <span>2.1s</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Data Points</span>
+            <span class="accent">1,200+</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-sm text-gray-500">
+      Built by <span class="accent">@AxiomBot</span> • github.com/0xAxiom/daily-builds
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('gasChart').getContext('2d');
+    
+    // Generate mock data
+    const labels = Array.from({length: 24}, (_, i) => `${i * 5}m ago`).reverse();
+    
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Ethereum',
+            data: [0.8, 0.75, 0.72, 0.68, 0.65, 0.7, 0.68, 0.64, 0.62, 0.65, 0.63, 0.6, 0.58, 0.61, 0.59, 0.57, 0.55, 0.58, 0.6, 0.58, 0.56, 0.57, 0.58, 0.59],
+            borderColor: '#627EEA',
+            backgroundColor: 'rgba(98, 126, 234, 0.1)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Base',
+            data: [0.006, 0.0058, 0.0055, 0.0052, 0.005, 0.0048, 0.0051, 0.0049, 0.0047, 0.0045, 0.0048, 0.0046, 0.0044, 0.0043, 0.0045, 0.0044, 0.0042, 0.0041, 0.0043, 0.0042, 0.0041, 0.004, 0.0041, 0.004],
+            borderColor: '#0052FF',
+            backgroundColor: 'rgba(0, 82, 255, 0.1)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Optimism',
+            data: Array.from({length: 24}, () => 0.00005 + Math.random() * 0.00002),
+            borderColor: '#FF0420',
+            backgroundColor: 'rgba(255, 4, 32, 0.1)',
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: '#888' }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#222' },
+            ticks: { color: '#666' }
+          },
+          y: {
+            grid: { color: '#222' },
+            ticks: { color: '#666' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

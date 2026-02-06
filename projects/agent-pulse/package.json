@@ -1,0 +1,34 @@
+{
+  "name": "agent-pulse",
+  "version": "1.0.0",
+  "description": "Real-time AI agent activity monitor for Base blockchain",
+  "main": "server/src/index.js",
+  "scripts": {
+    "start": "node server/src/index.js",
+    "dev": "nodemon server/src/index.js",
+    "build:frontend": "cd frontend && npm run build",
+    "dev:frontend": "cd frontend && npm start",
+    "setup": "npm install && cd frontend && npm install"
+  },
+  "keywords": [
+    "agent",
+    "base",
+    "blockchain",
+    "monitoring",
+    "real-time"
+  ],
+  "author": "AxiomBot",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "playwright": "^1.58.1",
+    "viem": "^2.7.15",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}

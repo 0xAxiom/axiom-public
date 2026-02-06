@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HookForge — V4 Hook Development Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-elevated: #161616;
+      --bg-hover: #1a1a1a;
+      --border: #1e1e1e;
+      --border-active: #333333;
+      --text-primary: #e5e5e5;
+      --text-secondary: #737373;
+      --text-muted: #525252;
+      --accent: #a3a3a3;
+      --accent-dim: #404040;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --info: #60a5fa;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+      height: 48px;
+    }
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header h1 span { color: var(--text-secondary); font-weight: 400; }
+    .header-actions { display: flex; gap: 8px; }
+
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr 320px;
+      grid-template-rows: 1fr;
+      height: calc(100vh - 48px);
+    }
+
+    /* Sidebar - Pattern Browser */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--bg-secondary);
+    }
+    .sidebar-header {
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .pattern-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .pattern-item:hover { background: var(--bg-hover); }
+    .pattern-item.active { background: var(--bg-elevated); border-left: 2px solid var(--accent); }
+    .pattern-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .pattern-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    .pattern-meta {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .pattern-tag {
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+    }
+    .complexity-dots {
+      display: flex;
+      gap: 2px;
+      align-items: center;
+    }
+    .complexity-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+    }
+    .complexity-dot.filled { background: var(--accent); }
+
+    /* Editor */
+    .editor-container {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .editor-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+    .editor-tab {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.1s;
+    }
+    .editor-tab:hover { color: var(--text-primary); }
+    .editor-tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent);
+    }
+    .editor-content {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+    #code-editor {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 16px;
+      border: none;
+      outline: none;
+      resize: none;
+      tab-size: 4;
+      white-space: pre;
+      overflow: auto;
+    }
+
+    /* Params Bar */
+    .params-bar {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .param-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .param-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+    .param-input {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 10px;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.1s;
+    }
+    .param-input:focus { border-color: var(--border-active); }
+    .param-input::placeholder { color: var(--text-muted); }
+
+    /* Buttons */
+    .btn {
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      transition: all 0.1s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn:hover { background: var(--bg-hover); border-color: var(--border-active); }
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      border-color: var(--text-primary);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+
+    /* Right Panel - Validation */
+    .right-panel {
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--bg-secondary);
+    }
+    .panel-section {
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-header {
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .score-badge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .score-good { background: #052e16; color: var(--success); }
+    .score-warn { background: #422006; color: var(--warning); }
+    .score-bad { background: #450a0a; color: var(--error); }
+
+    .validation-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .validation-item .type {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 2px;
+    }
+    .validation-item.error .type { color: var(--error); }
+    .validation-item.warning .type { color: var(--warning); }
+    .validation-item.suggestion .type { color: var(--info); }
+    .validation-item.info .type { color: var(--text-secondary); }
+    .validation-item .message { color: var(--text-primary); }
+    .validation-item .detail {
+      color: var(--text-secondary);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    /* Gas Panel */
+    .gas-item {
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .gas-label { color: var(--text-secondary); }
+    .gas-value { color: var(--text-primary); }
+
+    /* Empty State */
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+    /* Compose Mode */
+    .compose-checkboxes {
+      padding: 8px 16px;
+    }
+    .compose-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .compose-check input { accent-color: var(--accent); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+    /* Loading */
+    .loading { opacity: 0.5; pointer-events: none; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar, .right-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔨 HookForge <span>V4 Hook Development Studio</span></h1>
+    <div class="header-actions">
+      <button class="btn" id="btn-validate" onclick="validateCode()">Validate</button>
+      <button class="btn" id="btn-compose" onclick="toggleCompose()">Compose</button>
+      <button class="btn btn-primary" id="btn-generate" onclick="generateCode()">Generate</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Left: Pattern Browser -->
+    <div class="sidebar">
+      <div class="sidebar-header">Hook Patterns</div>
+      <div id="pattern-list"></div>
+    </div>
+
+    <!-- Center: Editor -->
+    <div class="editor-container">
+      <div class="editor-tabs">
+        <div class="editor-tab active" data-tab="solidity" onclick="switchTab('solidity')">Hook.sol</div>
+        <div class="editor-tab" data-tab="test" onclick="switchTab('test')">Hook.t.sol</div>
+      </div>
+      <div class="editor-content">
+        <textarea id="code-editor" spellcheck="false" placeholder="← Select a pattern to generate code, or write your own hook here..."></textarea>
+      </div>
+      <div class="params-bar" id="params-bar">
+        <div class="param-group">
+          <span class="param-label">Select a pattern →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Validation -->
+    <div class="right-panel">
+      <div class="panel-section">
+        <div class="panel-header">
+          Validation
+          <span class="score-badge" id="score-badge" style="display:none"></span>
+        </div>
+        <div id="validation-results">
+          <div class="empty-state">
+            <div class="icon">🔍</div>
+            Generate or write hook code, then click Validate
+          </div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-header">Gas Estimate</div>
+        <div id="gas-results">
+          <div class="empty-state" style="padding: 20px;">
+            Gas estimates appear after validation
+          </div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-header">V4 Quick Reference</div>
+        <div id="v4-reference" style="padding: 12px 16px; font-size: 11px; line-height: 1.7; color: var(--text-secondary);">
+          <div style="margin-bottom: 8px;">
+            <strong style="color: var(--text-primary);">Sign Convention</strong><br>
+            amountSpecified &lt; 0 → exact-input<br>
+            amountSpecified &gt; 0 → exact-output
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong style="color: var(--text-primary);">Fee Base</strong><br>
+            ALWAYS use params.amountSpecified<br>
+            NEVER use BalanceDelta
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong style="color: var(--text-primary);">Safe Actions</strong><br>
+            CLOSE_CURRENCY (0x11) ✅<br>
+            SETTLE_PAIR ❌ (breaks on hooks)
+          </div>
+          <div>
+            <strong style="color: var(--text-primary);">Delta Signs</strong><br>
+            positive → hook takes tokens<br>
+            negative → hook gives tokens
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let patterns = [];
+    let selectedPattern = null;
+    let activeTab = 'solidity';
+    let generatedCode = { solidity: '', test: '' };
+    let composeMode = false;
+    let selectedForCompose = new Set();
+
+    // Init
+    async function init() {
+      try {
+        const res = await fetch('/api/patterns');
+        const data = await res.json();
+        patterns = data.patterns;
+        renderPatterns();
+      } catch (e) {
+        console.error('Failed to load patterns:', e);
+      }
+    }
+
+    function renderPatterns() {
+      const list = document.getElementById('pattern-list');
+
+      if (composeMode) {
+        list.innerHTML = `
+          <div class="compose-checkboxes">
+            <div style="padding: 8px 0; font-size: 11px; color: var(--text-secondary);">
+              Select patterns to compose:
+            </div>
+            ${patterns.map(p => `
+              <label class="compose-check">
+                <input type="checkbox" value="${p.id}" 
+                  ${selectedForCompose.has(p.id) ? 'checked' : ''}
+                  onchange="toggleComposePattern('${p.id}')">
+                ${p.name}
+              </label>
+            `).join('')}
+            <div style="padding: 8px 0;">
+              <button class="btn btn-primary" onclick="composeSelected()" 
+                ${selectedForCompose.size < 2 ? 'disabled style="opacity:0.5"' : ''}>
+                Compose ${selectedForCompose.size} Patterns
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = patterns.map(p => `
+        <div class="pattern-item ${selectedPattern?.id === p.id ? 'active' : ''}" 
+             onclick="selectPattern('${p.id}')">
+          <div class="pattern-name">${p.name}</div>
+          <div class="pattern-desc">${p.description}</div>
+          <div class="pattern-meta">
+            <div class="complexity-dots">
+              ${Array.from({length: 3}, (_, i) => 
+                `<div class="complexity-dot ${i < p.complexity ? 'filled' : ''}"></div>`
+              ).join('')}
+            </div>
+            ${p.callbacks.map(c => `<span class="pattern-tag">${c}</span>`).join('')}
+            <span class="pattern-tag">~${(p.gasEstimate?.total || p.gasEstimate?.beforeSwap || 0).toLocaleString()}g</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function selectPattern(id) {
+      const res = await fetch(`/api/patterns/${id}`);
+      const data = await res.json();
+      selectedPattern = data.pattern;
+      renderPatterns();
+      renderParams();
+    }
+
+    function renderParams() {
+      if (!selectedPattern) return;
+      const bar = document.getElementById('params-bar');
+      bar.innerHTML = selectedPattern.params.map(p => `
+        <div class="param-group">
+          <span class="param-label">${p.name}</span>
+          <input class="param-input" 
+            id="param-${p.name}" 
+            placeholder="${p.default || p.description}"
+            value="${p.default || ''}"
+            style="width: ${p.type === 'address' ? '320px' : '120px'}">
+        </div>
+      `).join('') + `
+        <button class="btn btn-primary" onclick="generateCode()">Generate →</button>
+      `;
+    }
+
+    async function generateCode() {
+      if (!selectedPattern) return;
+
+      const params = {};
+      for (const p of selectedPattern.params) {
+        const input = document.getElementById(`param-${p.name}`);
+        params[p.name] = input?.value || p.default || '';
+      }
+
+      document.getElementById('btn-generate').classList.add('loading');
+      
+      try {
+        const res = await fetch('/api/generate/template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patternId: selectedPattern.id, params })
+        });
+        const data = await res.json();
+        
+        generatedCode.solidity = data.solidity;
+        generatedCode.test = data.test;
+        
+        const editor = document.getElementById('code-editor');
+        editor.value = activeTab === 'solidity' ? data.solidity : data.test;
+
+        // Show warnings in validation panel
+        if (data.warnings?.length) {
+          renderValidationResults({ 
+            warnings: data.warnings.filter(w => w.severity === 'warning'),
+            suggestions: data.warnings.filter(w => w.severity === 'info'),
+            errors: [], 
+            score: 85 
+          });
+        }
+      } catch (e) {
+        console.error('Generation failed:', e);
+      }
+      
+      document.getElementById('btn-generate').classList.remove('loading');
+    }
+
+    async function validateCode() {
+      const code = document.getElementById('code-editor').value;
+      if (!code.trim()) return;
+
+      document.getElementById('btn-validate').classList.add('loading');
+
+      try {
+        const res = await fetch('/api/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        renderValidationResults(data);
+        renderGasResults(data.gasEstimate);
+      } catch (e) {
+        console.error('Validation failed:', e);
+      }
+
+      document.getElementById('btn-validate').classList.remove('loading');
+    }
+
+    function renderValidationResults(data) {
+      const container = document.getElementById('validation-results');
+      const badge = document.getElementById('score-badge');
+      
+      const score = data.score || 0;
+      badge.style.display = 'inline';
+      badge.textContent = `${score}/100`;
+      badge.className = `score-badge ${score >= 80 ? 'score-good' : score >= 50 ? 'score-warn' : 'score-bad'}`;
+
+      const allItems = [
+        ...(data.errors || []).map(e => ({ ...e, level: 'error' })),
+        ...(data.warnings || []).map(w => ({ ...w, level: 'warning' })),
+        ...(data.suggestions || []).map(s => ({ ...s, level: 'suggestion' }))
+      ];
+
+      if (allItems.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 20px;">
+            <div style="color: var(--success); font-size: 16px;">✓</div>
+            No issues found
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = allItems.map(item => `
+        <div class="validation-item ${item.level}">
+          <div class="type">${item.level}: ${item.type || ''}</div>
+          <div class="message">${item.message}</div>
+          ${item.detail ? `<div class="detail">${item.detail}</div>` : ''}
+          ${item.solution ? `<div class="detail">💡 ${item.solution}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderGasResults(gasEstimate) {
+      const container = document.getElementById('gas-results');
+      if (!gasEstimate || !gasEstimate.perCallback) {
+        container.innerHTML = '<div class="empty-state" style="padding:20px;">No gas data</div>';
+        return;
+      }
+
+      const entries = Object.entries(gasEstimate.perCallback);
+      container.innerHTML = entries.map(([cb, data]) => `
+        <div class="gas-item">
+          <span class="gas-label">${cb}</span>
+          <span class="gas-value">${(data.total || data).toLocaleString()} gas</span>
+        </div>
+      `).join('') + `
+        <div class="gas-item" style="border-top: 1px solid var(--border); font-weight: 600;">
+          <span class="gas-label">Total</span>
+          <span class="gas-value">${gasEstimate.total.toLocaleString()} gas</span>
+        </div>
+      `;
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById('code-editor').value = generatedCode[tab] || '';
+    }
+
+    function toggleCompose() {
+      composeMode = !composeMode;
+      document.getElementById('btn-compose').classList.toggle('btn-primary', composeMode);
+      if (!composeMode) selectedForCompose.clear();
+      renderPatterns();
+    }
+
+    function toggleComposePattern(id) {
+      if (selectedForCompose.has(id)) selectedForCompose.delete(id);
+      else selectedForCompose.add(id);
+      renderPatterns();
+    }
+
+    async function composeSelected() {
+      if (selectedForCompose.size < 2) return;
+      try {
+        const res = await fetch('/api/generate/compose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patterns: [...selectedForCompose], params: {} })
+        });
+        const data = await res.json();
+        generatedCode.solidity = data.solidity;
+        generatedCode.test = data.test;
+        document.getElementById('code-editor').value = data.solidity;
+        composeMode = false;
+        selectedForCompose.clear();
+        renderPatterns();
+      } catch (e) {
+        console.error('Composition failed:', e);
+      }
+    }
+
+    // Init on load
+    init();
+  </script>
+</body>
+</html>

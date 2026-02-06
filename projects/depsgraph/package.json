@@ -1,0 +1,23 @@
+{
+  "name": "depsgraph",
+  "version": "1.0.0",
+  "description": "Dependency topology visualizer for npm packages — interactive force-directed graphs with risk scoring and size analysis",
+  "main": "src/cli.js",
+  "bin": {
+    "depsgraph": "./bin/depsgraph"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "server": "node src/server.js",
+    "test": "node test/run.js"
+  },
+  "keywords": ["npm", "dependencies", "graph", "visualization", "security", "risk"],
+  "author": "Axiom",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^13.1.0",
+    "express": "^5.1.0",
+    "open": "^10.1.2",
+    "semver": "^7.7.1"
+  }
+}

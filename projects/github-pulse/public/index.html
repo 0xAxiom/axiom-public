@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Pulse</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <!-- Header -->
+  <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <h1 class="text-xl font-bold">GitHub Pulse</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div id="connection-status" class="flex items-center gap-2 text-sm">
+          <span class="w-2 h-2 rounded-full bg-yellow-400 pulse"></span>
+          <span class="text-gray-400">Connecting...</span>
+        </div>
+        <button onclick="refreshAll()" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm transition">
+          Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div class="text-gray-400 text-sm">Commits Today</div>
+        <div id="stat-commits" class="text-2xl font-bold text-green-400">-</div>
+      </div>
+      <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div class="text-gray-400 text-sm">Open PRs</div>
+        <div id="stat-prs" class="text-2xl font-bold text-blue-400">-</div>
+      </div>
+      <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div class="text-gray-400 text-sm">Open Issues</div>
+        <div id="stat-issues" class="text-2xl font-bold text-yellow-400">-</div>
+      </div>
+      <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div class="text-gray-400 text-sm">Last Activity</div>
+        <div id="stat-activity" class="text-2xl font-bold text-purple-400">-</div>
+      </div>
+    </div>
+
+    <!-- Repos Grid -->
+    <div id="repos-container" class="grid md:grid-cols-2 gap-6 mb-6">
+      <!-- Repo cards inserted here -->
+    </div>
+
+    <!-- Activity Chart -->
+    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-6">
+      <h2 class="text-lg font-semibold mb-4">Commit Activity (30 days)</h2>
+      <div class="h-48">
+        <canvas id="activity-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Live Events -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700">
+      <div class="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Live Events</h2>
+        <span id="event-count" class="text-sm text-gray-400">0 events</span>
+      </div>
+      <div id="events-container" class="max-h-96 overflow-y-auto">
+        <div class="text-center py-8 text-gray-500">
+          Waiting for events...
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State
+    let activityData = {};
+    let chart = null;
+    let eventSource = null;
+    let events = [];
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      fetchActivity();
+      connectSSE();
+    });
+
+    // Fetch activity from API
+    async function fetchActivity() {
+      try {
+        const res = await fetch('/api/activity');
+        activityData = await res.json();
+        renderRepos();
+        updateStats();
+        updateChart();
+      } catch (e) {
+        console.error('Failed to fetch activity:', e);
+      }
+    }
+
+    function refreshAll() {
+      fetchActivity();
+    }
+
+    // Render repo cards
+    function renderRepos() {
+      const container = document.getElementById('repos-container');
+      container.innerHTML = '';
+
+      for (const [fullName, data] of Object.entries(activityData)) {
+        const card = createRepoCard(fullName, data);
+        container.appendChild(card);
+      }
+    }
+
+    function createRepoCard(fullName, data) {
+      const div = document.createElement('div');
+      div.className = 'bg-gray-800 rounded-lg border border-gray-700 overflow-hidden';
+      
+      const lastPush = timeAgo(data.lastPush);
+      const oldestPR = data.prs.oldestAgeDays > 0 ? `${data.prs.oldestAgeDays}d` : '-';
+
+      div.innerHTML = `
+        <div class="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+          <a href="${data.repo.url}" target="_blank" class="font-semibold hover:text-blue-400 transition flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            ${fullName}
+          </a>
+          <span class="text-sm text-gray-400">${lastPush}</span>
+        </div>
+        <div class="p-4 grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-2xl font-bold text-green-400">${data.commits.today}</div>
+            <div class="text-xs text-gray-400">commits today</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-blue-400">${data.prs.open}</div>
+            <div class="text-xs text-gray-400">open PRs</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-yellow-400">${data.issues.open}</div>
+            <div class="text-xs text-gray-400">open issues</div>
+          </div>
+        </div>
+        <div class="px-4 pb-4">
+          <div class="text-xs text-gray-500 mb-2">Recent commits</div>
+          ${data.commits.recent.slice(0, 3).map(c => `
+            <div class="text-sm py-1 border-t border-gray-700/50 flex items-center gap-2">
+              <code class="text-green-400 text-xs">${c.sha}</code>
+              <span class="truncate text-gray-300">${escapeHtml(c.message)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      return div;
+    }
+
+    // Update aggregate stats
+    function updateStats() {
+      let totalCommits = 0;
+      let totalPRs = 0;
+      let totalIssues = 0;
+      let mostRecent = null;
+
+      for (const data of Object.values(activityData)) {
+        totalCommits += data.commits.today;
+        totalPRs += data.prs.open;
+        totalIssues += data.issues.open;
+        
+        const pushDate = new Date(data.lastPush);
+        if (!mostRecent || pushDate > mostRecent) {
+          mostRecent = pushDate;
+        }
+      }
+
+      document.getElementById('stat-commits').textContent = totalCommits;
+      document.getElementById('stat-prs').textContent = totalPRs;
+      document.getElementById('stat-issues').textContent = totalIssues;
+      document.getElementById('stat-activity').textContent = mostRecent ? timeAgo(mostRecent) : '-';
+    }
+
+    // Initialize chart
+    function initChart() {
+      const ctx = document.getElementById('activity-chart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: []
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: 'top',
+              labels: { color: '#9ca3af' }
+            }
+          },
+          scales: {
+            x: { 
+              stacked: true,
+              grid: { color: '#374151' },
+              ticks: { color: '#9ca3af' }
+            },
+            y: { 
+              stacked: true,
+              grid: { color: '#374151' },
+              ticks: { color: '#9ca3af' }
+            }
+          }
+        }
+      });
+    }
+
+    // Update chart with data
+    function updateChart() {
+      const colors = ['#4ade80', '#60a5fa', '#fbbf24', '#a78bfa', '#f472b6'];
+      const datasets = [];
+      let labels = [];
+
+      let colorIdx = 0;
+      for (const [fullName, data] of Object.entries(activityData)) {
+        const byDay = data.commits.byDay;
+        const sortedDays = Object.keys(byDay).sort();
+        
+        if (labels.length === 0) {
+          labels = sortedDays.map(d => d.slice(5)); // MM-DD format
+        }
+
+        datasets.push({
+          label: fullName.split('/')[1],
+          data: sortedDays.map(d => byDay[d]),
+          backgroundColor: colors[colorIdx % colors.length],
+          borderRadius: 4
+        });
+        colorIdx++;
+      }
+
+      chart.data.labels = labels;
+      chart.data.datasets = datasets;
+      chart.update();
+    }
+
+    // Connect to SSE stream
+    function connectSSE() {
+      eventSource = new EventSource('/api/stream');
+      
+      eventSource.onopen = () => {
+        setConnectionStatus('connected');
+      };
+
+      eventSource.onmessage = (e) => {
+        try {
+          const event = JSON.parse(e.data);
+          handleEvent(event);
+        } catch (err) {
+          console.error('Failed to parse event:', err);
+        }
+      };
+
+      eventSource.onerror = () => {
+        setConnectionStatus('disconnected');
+        // Reconnect after 3s
+        setTimeout(connectSSE, 3000);
+      };
+    }
+
+    function setConnectionStatus(status) {
+      const el = document.getElementById('connection-status');
+      if (status === 'connected') {
+        el.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-green-400"></span>
+          <span class="text-green-400">Live</span>
+        `;
+      } else {
+        el.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-red-400 pulse"></span>
+          <span class="text-red-400">Reconnecting...</span>
+        `;
+      }
+    }
+
+    // Handle incoming event
+    function handleEvent(event) {
+      if (event.type === 'connected') return;
+      
+      events.unshift(event);
+      if (events.length > 50) events.pop();
+
+      renderEvents();
+
+      // Refresh data on significant events
+      if (['push', 'commit', 'pull_request', 'issues'].includes(event.type)) {
+        setTimeout(fetchActivity, 1000);
+      }
+    }
+
+    function renderEvents() {
+      const container = document.getElementById('events-container');
+      document.getElementById('event-count').textContent = `${events.length} events`;
+
+      if (events.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-gray-500">Waiting for events...</div>';
+        return;
+      }
+
+      container.innerHTML = events.map((e, i) => {
+        const icon = getEventIcon(e.type);
+        const color = getEventColor(e.type);
+        const desc = formatEventDesc(e);
+        const time = timeAgo(e.timestamp);
+        const isNew = i === 0;
+
+        return `
+          <div class="px-4 py-3 border-b border-gray-700/50 flex items-start gap-3 ${isNew ? 'fade-in bg-gray-700/30' : ''}">
+            <span class="mt-1">${icon}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm">${desc}</div>
+              <div class="text-xs text-gray-500 mt-1">${e.repo} · ${time}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getEventIcon(type) {
+      const icons = {
+        push: '📤',
+        commit: '✅',
+        pull_request: '🔀',
+        issue: '🎫',
+        star: '⭐',
+        fork: '🍴',
+        connected: '🔗'
+      };
+      return icons[type] || '📌';
+    }
+
+    function getEventColor(type) {
+      const colors = {
+        push: 'text-green-400',
+        commit: 'text-green-400',
+        pull_request: 'text-blue-400',
+        issue: 'text-yellow-400',
+        star: 'text-yellow-400',
+        fork: 'text-purple-400'
+      };
+      return colors[type] || 'text-gray-400';
+    }
+
+    function formatEventDesc(e) {
+      switch (e.type) {
+        case 'push':
+          return `<strong>${escapeHtml(e.author)}</strong> pushed ${e.commits} commit${e.commits > 1 ? 's' : ''} to <code>${e.branch}</code>`;
+        case 'commit':
+          return `<code>${e.sha}</code> ${escapeHtml(e.message)}`;
+        case 'pull_request':
+          return `PR #${e.number} ${e.action}: <strong>${escapeHtml(e.title || '')}</strong>`;
+        case 'issue':
+          return `Issue #${e.number} ${e.action}: <strong>${escapeHtml(e.title || '')}</strong>`;
+        case 'star':
+          return `<strong>${escapeHtml(e.user || '')}</strong> ${e.action} the repo (${e.totalStars} stars)`;
+        case 'fork':
+          return `<strong>${escapeHtml(e.user || '')}</strong> forked the repo`;
+        default:
+          return `${e.type}: ${e.action || 'event'}`;
+      }
+    }
+
+    // Utils
+    function timeAgo(date) {
+      const now = new Date();
+      const then = new Date(date);
+      const diff = Math.floor((now - then) / 1000);
+
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>

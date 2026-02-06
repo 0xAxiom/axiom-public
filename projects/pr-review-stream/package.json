@@ -1,0 +1,23 @@
+{
+  "name": "pr-review-stream",
+  "version": "1.0.0",
+  "description": "Streaming AI code review pipeline with local LLMs",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc",
+    "tunnel": "npx localtunnel --port 3456 --subdomain pr-review"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.8.0",
+    "octokit": "^4.0.0",
+    "@octokit/webhooks": "^13.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

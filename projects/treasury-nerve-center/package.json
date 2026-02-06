@@ -1,0 +1,20 @@
+{
+  "name": "treasury-nerve-center",
+  "version": "1.0.0",
+  "description": "One API call to understand your entire treasury position",
+  "type": "module",
+  "main": "src/index.mjs",
+  "bin": {
+    "treasury": "./src/index.mjs"
+  },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "test": "node src/index.mjs 0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5 --chain base"
+  },
+  "keywords": ["treasury", "defi", "agent", "portfolio", "uniswap", "base"],
+  "author": "Axiom",
+  "license": "MIT",
+  "dependencies": {
+    "viem": "^2.21.0"
+  }
+}

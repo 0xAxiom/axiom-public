@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>depsgraph — Dependency Topology Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header id="header">
+      <div class="header-left">
+        <h1 class="logo">
+          <span class="logo-icon">◈</span>
+          <span class="logo-text">depsgraph</span>
+        </h1>
+      </div>
+      <div class="header-center">
+        <div class="search-container">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="11" y1="11" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search packages… (e.g. express, react)" autocomplete="off" spellcheck="false">
+          <kbd class="search-hint">Enter</kbd>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="btn-json" class="header-btn" title="Export JSON" disabled>
+          <span class="btn-icon">{ }</span>
+        </button>
+        <button id="btn-reset" class="header-btn" title="Reset zoom" disabled>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8a6 6 0 0110.89-3.48M14 8a6 6 0 01-10.89 3.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 2v4h-4M2 14v-4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div id="stats-bar" class="hidden">
+      <div class="stat">
+        <span class="stat-value" id="stat-packages">—</span>
+        <span class="stat-label">packages</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="stat-size">—</span>
+        <span class="stat-label">total size</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="stat-depth">—</span>
+        <span class="stat-label">max depth</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="stat-direct">—</span>
+        <span class="stat-label">direct</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="stat-transitive">—</span>
+        <span class="stat-label">transitive</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="stat-risk">—</span>
+        <span class="stat-label">avg risk</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="risk-distribution">
+        <span class="risk-dot risk-low" id="risk-low-count">0</span>
+        <span class="risk-dot risk-medium" id="risk-medium-count">0</span>
+        <span class="risk-dot risk-high" id="risk-high-count">0</span>
+        <span class="risk-dot risk-critical" id="risk-critical-count">0</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main">
+      <!-- Landing State -->
+      <div id="landing">
+        <div class="landing-content">
+          <div class="landing-icon">◈</div>
+          <h2>Dependency Topology Visualizer</h2>
+          <p>Enter an npm package name to visualize its dependency graph,<br>risk scores, and topology.</p>
+          <div class="landing-examples">
+            <span class="landing-example-label">Try:</span>
+            <button class="example-btn" data-package="express">express</button>
+            <button class="example-btn" data-package="react">react</button>
+            <button class="example-btn" data-package="lodash">lodash</button>
+            <button class="example-btn" data-package="commander">commander</button>
+            <button class="example-btn" data-package="ms">ms</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading" class="hidden">
+        <div class="loading-content">
+          <div class="spinner"></div>
+          <p id="loading-text">Resolving dependencies…</p>
+          <p id="loading-detail" class="loading-detail"></p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div id="error-state" class="hidden">
+        <div class="error-content">
+          <div class="error-icon">✕</div>
+          <h3>Analysis Failed</h3>
+          <p id="error-message"></p>
+          <button id="error-retry" class="retry-btn">Try Again</button>
+        </div>
+      </div>
+
+      <!-- Graph Canvas -->
+      <div id="graph-container" class="hidden">
+        <svg id="graph-svg"></svg>
+      </div>
+
+      <!-- Tooltip -->
+      <div id="tooltip" class="hidden">
+        <div class="tooltip-header">
+          <span class="tooltip-name" id="tooltip-name"></span>
+          <span class="tooltip-version" id="tooltip-version"></span>
+        </div>
+        <div class="tooltip-risk" id="tooltip-risk"></div>
+        <div class="tooltip-meta" id="tooltip-meta"></div>
+      </div>
+    </main>
+
+    <!-- Side Panel -->
+    <aside id="side-panel" class="hidden">
+      <div class="panel-header">
+        <h3 id="panel-title">Package Details</h3>
+        <button id="panel-close" class="panel-close-btn">✕</button>
+      </div>
+      <div class="panel-body" id="panel-body">
+        <!-- Populated by JS -->
+      </div>
+    </aside>
+
+    <!-- Filter for highlighting -->
+    <div id="node-filter" class="hidden">
+      <input type="text" id="filter-input" placeholder="Filter nodes…" autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

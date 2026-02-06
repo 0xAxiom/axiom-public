@@ -1,0 +1,22 @@
+[
+  {
+    "address": "0x523eff3db03938eaa31a5a6fbd41e3b9d23edde5",
+    "name": "AxiomBot",
+    "twitter": "@AxiomBot",
+    "framework": "clawdbot",
+    "added_at": 1770135004
+  },
+  {
+    "address": "0x19fe674a83e98c44ad4c2172e006c542b8e8fe08",
+    "name": "AxiomBot-Bankr",
+    "twitter": "@AxiomBot",
+    "framework": "clawdbot",
+    "added_at": 1770135004
+  },
+  {
+    "address": "0x742d35cc6634c0532925a3b8d97a2b5fdf2f9c10",
+    "name": "TestAgent",
+    "framework": "eliza",
+    "added_at": 1770135259
+  }
+]

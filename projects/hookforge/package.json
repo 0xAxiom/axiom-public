@@ -1,0 +1,20 @@
+{
+  "name": "hookforge",
+  "version": "1.0.0",
+  "description": "Uniswap V4 Hook Development Studio",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "keywords": ["uniswap", "v4", "hooks", "defi", "solidity"],
+  "author": "Axiom",
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
