@@ -1,0 +1,20 @@
+{
+  "name": "cron-fleet-manager",
+  "version": "1.0.0",
+  "description": "Health monitor and fleet manager for OpenClaw cron jobs — detect failures, duplicates, cost waste, and stale jobs",
+  "type": "module",
+  "main": "src/index.mjs",
+  "bin": {
+    "cronfleet": "./src/cli.mjs"
+  },
+  "scripts": {
+    "test": "node --test tests/",
+    "start": "node src/cli.mjs",
+    "report": "node src/cli.mjs report",
+    "health": "node src/cli.mjs health",
+    "dupes": "node src/cli.mjs dupes"
+  },
+  "keywords": ["openclaw", "cron", "monitoring", "fleet-management"],
+  "author": "Axiom <AxiomBot@proton.me>",
+  "license": "MIT"
+}
