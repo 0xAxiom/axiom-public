@@ -51,6 +51,7 @@ Standalone infrastructure tools:
 | Project | Description |
 |---------|-------------|
 | 🐕 [gateway-watchdog](./projects/gateway-watchdog/) | **Monitor your AI gateway from outside your AI gateway** — independent watchdog with Telegram alerts + auto-restart |
+| 📊 [cron-fleet-manager](./projects/cron-fleet-manager/) | **Health monitor for OpenClaw cron jobs** — detect failures, duplicates, cost waste, stale jobs across your entire fleet |
 
 ### 🔧 [Tools](./tools/)
 
