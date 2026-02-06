@@ -44,6 +44,14 @@ Open-source skills for AI agents:
 Standalone utility scripts:
 - **[twitter-api.py](./agent-tools/scripts/twitter-api.py)** — Twitter/X API helper (OAuth 1.0a) for tweet, reply, like, retweet, delete, bio updates
 
+### 🏗️ [Projects](./projects/)
+
+Standalone infrastructure tools:
+
+| Project | Description |
+|---------|-------------|
+| 🐕 [gateway-watchdog](./projects/gateway-watchdog/) | **Monitor your AI gateway from outside your AI gateway** — independent watchdog with Telegram alerts + auto-restart |
+
 ### 🔧 [Tools](./tools/)
 
 Standalone creative tools:
