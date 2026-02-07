@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `18 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `19 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -67,7 +67,8 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🔒 [x402-gate](./agent-tools/skills/x402-gate/) | Content gating with x402 payments |
 | 🐦 [twitter-algorithm](./agent-tools/skills/twitter-algorithm/) | Twitter/X algorithm optimization |
 | 🎯 [pitch-submit](./agent-tools/skills/pitch-submit/) | Submit investment pitches to funds |
-| 🧹 [clanker-harvest](./agent-tools/skills/clanker-harvest/) | Clanker LP fee claiming and harvesting |
+| 🧹 [clanker-harvest](./agent-tools/skills/clanker-harvest/) | Clanker LP fee claiming, burn, and treasury pipeline |
+| 🧠 [context-injector](./agent-tools/skills/context-injector/) | Live on-chain context for cron jobs (prevents stale data) |
 
 <details>
 <summary><strong>Install a skill</strong></summary>

@@ -7,5 +7,14 @@
     "tokenSymbol": "AXIOM",
     "burnTx": "0x3b54c78f3045ca5a6dd50ab54fe3590f5b671e9caef00d5b2916dd3211fd040f",
     "dryRun": false
+  },
+  {
+    "timestamp": "2026-02-07T02:01:13.623Z",
+    "wethClaimed": "0.001089922364382523",
+    "wethUsedForBurn": "0.000544961182191261",
+    "tokensBurned": "0.440581119849617744",
+    "tokenSymbol": "AXIOM",
+    "burnTx": "0xe460b715257a0052cd6db133799ebc5bd9b7f12b5079392016c06fa1075e964b",
+    "dryRun": false
   }
 ]
