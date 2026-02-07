@@ -1,11 +1,12 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 19 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 20 skills and counting.
 
 ## Available Skills
 
 | Skill | Description | Status |
 |-------|-------------|--------|
+| 📝 [article-pipeline](./article-pipeline/) | Markdown to X Articles: validation, HTML, 5:2 banner generation | ✅ Tested |
 | 🚀 [agent-launch-monitor](./agent-launch-monitor/) | Monitor and track new agent token launches | ✅ Tested |
 | 🏗️ [agent-launchpad](./agent-launchpad/) | Launch and deploy AI agent tokens on Base | ✅ Tested |
 | ⚙️ [agent-ops](./agent-ops/) | Workflow orchestration, sub-agent architecture, task management | ✅ Tested |
