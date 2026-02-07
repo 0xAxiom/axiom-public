@@ -1,0 +1,12 @@
+{
+  "name": "uniswap-v4-lp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "viem": "^2.0.0",
+    "minimist": "^1.2.8",
+    "dotenv": "^16.0.0",
+    "@ethersproject/abi": "^5.7.0"
+  }
+}
