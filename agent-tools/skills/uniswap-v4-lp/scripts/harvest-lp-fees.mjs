@@ -52,7 +52,7 @@ const CONTRACTS = {
 const POOL_KEY = {
   currency0: '0x4200000000000000000000000000000000000006',
   currency1: '0xf3ce5ddaab6c133f9875a4a46c55cf0b58111b07',
-  fee: 0,
+  fee: 8388608,  // DYNAMIC fee — must match on-chain pool key
   tickSpacing: 200,
   hooks: '0xb429d62f8f3bffb98cdb9569533ea23bf0ba28cc',
 };
@@ -117,6 +117,7 @@ async function swapV4(publicClient, walletClient, account, poolKey, zeroForOne, 
 
   await ensurePermit2(publicClient, walletClient, account, inputToken, CONTRACTS.UNIVERSAL_ROUTER, amountIn, zeroForOne ? 'WETH' : 'AXIOM');
 
+  // Proven V4 swap pattern: 0x06 (V4_SWAP) + 0x0c (SETTLE) + 0x0f (TAKE)
   const swapParams = defaultAbiCoder.encode(
     ['tuple(tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) poolKey, bool zeroForOne, uint128 amountIn, uint128 amountOutMinimum, bytes hookData)'],
     [{
@@ -134,7 +135,7 @@ async function swapV4(publicClient, walletClient, account, poolKey, zeroForOne, 
 
   const hash = await walletClient.writeContract({
     address: CONTRACTS.UNIVERSAL_ROUTER,
-    abi: UNIVERSAL_ROUTER_ABI,
+    abi: [{ type: 'function', name: 'execute', inputs: [{ name: 'commands', type: 'bytes' }, { name: 'inputs', type: 'bytes[]' }, { name: 'deadline', type: 'uint256' }], outputs: [], stateMutability: 'payable' }],
     functionName: 'execute',
     args: ['0x10', [v4SwapInput], deadline],
   });
