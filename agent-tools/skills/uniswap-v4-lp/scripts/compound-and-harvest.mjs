@@ -696,18 +696,20 @@ async function main() {
   // Compound portion
   if (compound0 > 0n || compound1 > 0n) {
     console.log('\n⏳ Step 2/4: Compounding fees back into position...');
-    const addResult = await addLiquidity(
-      publicClient, walletClient, account, tokenId, poolKey,
-      compound0, compound1, sqrtPriceX96, tickLower, tickUpper, deadline
-    );
+    try {
+      const addResult = await addLiquidity(
+        publicClient, walletClient, account, tokenId, poolKey,
+        compound0, compound1, sqrtPriceX96, tickLower, tickUpper, deadline
+      );
 
-    if (addResult.success) {
-      console.log(`   ✅ Compounded! TX: ${addResult.hash}`);
-      console.log(`   Liquidity added: ${addResult.newLiquidity}`);
-    } else {
-      console.log(`   ⚠️  Compound failed (${addResult.reason}) — continuing to harvest all fees`);
-      // If compound fails, harvest everything instead
-      // harvest0/harvest1 stay as-is since compound didn't consume tokens
+      if (addResult.success) {
+        console.log(`   ✅ Compounded! TX: ${addResult.hash}`);
+        console.log(`   Liquidity added: ${addResult.newLiquidity}`);
+      } else {
+        console.log(`   ⚠️  Compound failed (${addResult.reason || 'unknown'}) — fees remain in wallet`);
+      }
+    } catch (err) {
+      console.log(`   ⚠️  Compound failed (${err.shortMessage || err.message || 'unknown error'}) — fees remain in wallet`);
     }
     await sleep(2000);
   } else {
