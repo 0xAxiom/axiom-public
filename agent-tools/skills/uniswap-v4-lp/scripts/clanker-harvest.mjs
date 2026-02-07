@@ -51,8 +51,10 @@ const cfg = {
   token:          getArg('token', config.token || null),
   tokenId:        getArg('token-id', config.tokenId || null),
   harvestAddress: getArg('harvest-address', config.harvestAddress || null),
+  treasuryAddress: getArg('treasury-address', config.treasuryAddress || null),
   compoundPct:    parseInt(getArg('compound-pct', config.compoundPct ?? '100')),
   burnPct:        parseInt(getArg('burn-pct', config.burnPct ?? '0')),
+  bnkrPct:        parseInt(getArg('bnkr-pct', config.bnkrPct ?? '0')),
   minUsd:         parseFloat(getArg('min-usd', config.minUsd ?? '0')),
   slippage:       parseFloat(getArg('slippage', config.slippage ?? '1')),
   feeContract:    getArg('fee-contract', config.feeContract || '0xf3622742b1e446d92e45e22923ef11c2fcd55d68'),
@@ -124,6 +126,7 @@ const C = {
   UNIVERSAL_ROUTER: '0x6ff5693b99212da76ad316178a184ab56d299b43',
   WETH: '0x4200000000000000000000000000000000000006',
   USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  BNKR: '0x22aF33FE49fD1Fa80c7149773dDe5890D3c76F3b',
   SWAP_ROUTER: '0x2626664c2603336E57B271c5C0b26F421741e481',
 };
 
@@ -796,98 +799,133 @@ ${cfg.dryRun ? '🔮  DRY RUN' : '🔥  LIVE'}
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // STEP 4: Swap harvest portion to USDC
+  // STEP 4: Swap harvest WETH → 50% USDC + 50% BNKR, send to treasury
   // ═══════════════════════════════════════════════════════════════════════════
   let harvestedUsdc = 0n;
+  let harvestedBnkr = 0n;
+  let usdcTxHash = null;
+  let bnkrTxHash = null;
+  const treasuryAddr = cfg.treasuryAddress || cfg.harvestAddress;
 
-  if (wantHarvest && (harvestWeth > 0n || harvestToken > 0n)) {
-    console.log(`\n📌 Step: Swap ${harvestPct}% → USDC`);
+  if ((wantHarvest || cfg.bnkrPct > 0) && (harvestWeth > 0n || harvestToken > 0n)) {
+    // First: swap any remaining harvest tokens → WETH
+    if (harvestToken > 0n && poolKey && !cfg.dryRun) {
+      try {
+        console.log(`\n📌 Step: Swap remaining ${formatEther(harvestToken)} ${symbol} → WETH`);
+        const wethBefore = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+        await swapTokenToWethV4(pub, wallet, account, cfg.token, harvestToken, poolKey);
+        await sleep(2000);
+        const wethAfter = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+        harvestWeth = harvestWeth + (wethAfter - wethBefore);
+        console.log(`   Total harvest WETH now: ${formatEther(harvestWeth)}`);
+      } catch (err) {
+        console.log(`   ⚠️ Token→WETH swap failed: ${err.shortMessage || err.message}`);
+      }
+    }
 
-    const usdcBefore = await pub.readContract({ address: C.USDC, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+    // Get actual WETH balance for harvest
+    const actualWeth = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+    const wethForHarvest = actualWeth < harvestWeth ? actualWeth : harvestWeth;
+
+    // Split WETH: 50% → USDC, 50% → BNKR
+    const wethForUsdc = wethForHarvest / 2n;
+    const wethForBnkr = wethForHarvest - wethForUsdc;
+
+    console.log(`\n📌 Step: Split harvest WETH → 50% USDC + 50% BNKR`);
+    console.log(`   WETH for USDC: ${formatEther(wethForUsdc)}`);
+    console.log(`   WETH for BNKR: ${formatEther(wethForBnkr)}`);
 
     if (cfg.dryRun) {
-      const est = parseFloat(formatEther(harvestWeth)) * ethPrice + parseFloat(formatEther(harvestToken)) * tokenPrice;
-      console.log(`   🔮 Would swap ~$${est.toFixed(2)} to USDC`);
+      const est = parseFloat(formatEther(wethForHarvest)) * ethPrice;
+      console.log(`   🔮 Would swap ~$${est.toFixed(2)} (50/50 USDC/BNKR)`);
     } else {
-      // Swap WETH → USDC
-      if (harvestWeth > 0n) {
+      // Ensure WETH approved for SwapRouter
+      const allow = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'allowance', args: [account.address, C.SWAP_ROUTER] });
+      if (allow < wethForHarvest) {
+        const tx = await wallet.writeContract({ address: C.WETH, abi: ERC20, functionName: 'approve', args: [C.SWAP_ROUTER, maxUint256] });
+        await pub.waitForTransactionReceipt({ hash: tx });
+        await sleep(500);
+      }
+
+      // Swap WETH → USDC (50%)
+      if (wethForUsdc > 0n) {
         try {
-          console.log(`   Swapping ${formatEther(harvestWeth)} WETH → USDC...`);
-          const allow = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'allowance', args: [account.address, C.SWAP_ROUTER] });
-          if (allow < harvestWeth) {
-            const tx = await wallet.writeContract({ address: C.WETH, abi: ERC20, functionName: 'approve', args: [C.SWAP_ROUTER, maxUint256] });
-            await pub.waitForTransactionReceipt({ hash: tx });
-            await sleep(500);
-          }
+          console.log(`   Swapping ${formatEther(wethForUsdc)} WETH → USDC...`);
+          const usdcBefore = await pub.readContract({ address: C.USDC, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
           const tx = await wallet.writeContract({
             address: C.SWAP_ROUTER, abi: SWAP_ABI,
             functionName: 'exactInputSingle',
-            args: [{ tokenIn: C.WETH, tokenOut: C.USDC, fee: 500, recipient: account.address, amountIn: harvestWeth, amountOutMinimum: 0n, sqrtPriceLimitX96: 0n }],
+            args: [{ tokenIn: C.WETH, tokenOut: C.USDC, fee: 500, recipient: account.address, amountIn: wethForUsdc, amountOutMinimum: 0n, sqrtPriceLimitX96: 0n }],
           });
           await pub.waitForTransactionReceipt({ hash: tx });
-          console.log(`   ✅ WETH → USDC: ${tx.slice(0, 20)}...`);
           await sleep(1000);
+          const usdcAfter = await pub.readContract({ address: C.USDC, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+          harvestedUsdc = usdcAfter - usdcBefore;
+          console.log(`   ✅ WETH → USDC: ${formatUnits(harvestedUsdc, 6)} USDC | ${tx.slice(0, 20)}...`);
         } catch (err) {
-          console.log(`   ❌ WETH swap failed: ${err.shortMessage || err.message}`);
+          console.log(`   ❌ WETH→USDC swap failed: ${err.shortMessage || err.message}`);
         }
       }
 
-      // Token → WETH via V4 Universal Router, then WETH → USDC via V3
-      if (harvestToken > 0n && poolKey) {
+      // Swap WETH → BNKR (50%) via V3 (WETH→BNKR pool)
+      if (wethForBnkr > 0n) {
         try {
-          const wethBefore = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
-          await swapTokenToWethV4(pub, wallet, account, cfg.token, harvestToken, poolKey);
-          await sleep(2000);
-          const wethAfter = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
-          const wethGained = wethAfter - wethBefore;
-          if (wethGained > 0n) {
-            console.log(`   Got ${formatEther(wethGained)} WETH from V4 swap, now → USDC...`);
-            const allow = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'allowance', args: [account.address, C.SWAP_ROUTER] });
-            if (allow < wethGained) {
-              const tx = await wallet.writeContract({ address: C.WETH, abi: ERC20, functionName: 'approve', args: [C.SWAP_ROUTER, maxUint256] });
+          console.log(`   Swapping ${formatEther(wethForBnkr)} WETH → BNKR...`);
+          const bnkrBefore = await pub.readContract({ address: C.BNKR, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+          // Try 1% fee tier first (10000), then 0.3% (3000)
+          let swapped = false;
+          for (const fee of [10000, 3000, 500]) {
+            try {
+              const tx = await wallet.writeContract({
+                address: C.SWAP_ROUTER, abi: SWAP_ABI,
+                functionName: 'exactInputSingle',
+                args: [{ tokenIn: C.WETH, tokenOut: C.BNKR, fee, recipient: account.address, amountIn: wethForBnkr, amountOutMinimum: 0n, sqrtPriceLimitX96: 0n }],
+              });
               await pub.waitForTransactionReceipt({ hash: tx });
-              await sleep(500);
+              swapped = true;
+              await sleep(1000);
+              const bnkrAfter = await pub.readContract({ address: C.BNKR, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+              harvestedBnkr = bnkrAfter - bnkrBefore;
+              console.log(`   ✅ WETH → BNKR: ${formatEther(harvestedBnkr)} BNKR (fee tier ${fee}) | ${tx.slice(0, 20)}...`);
+              break;
+            } catch (e) {
+              console.log(`   Fee tier ${fee} failed, trying next...`);
             }
-            const tx = await wallet.writeContract({
-              address: C.SWAP_ROUTER, abi: SWAP_ABI,
-              functionName: 'exactInputSingle',
-              args: [{ tokenIn: C.WETH, tokenOut: C.USDC, fee: 500, recipient: account.address, amountIn: wethGained, amountOutMinimum: 0n, sqrtPriceLimitX96: 0n }],
-            });
-            await pub.waitForTransactionReceipt({ hash: tx });
-            console.log(`   ✅ WETH → USDC: ${tx.slice(0, 20)}...`);
+          }
+          if (!swapped) {
+            console.log(`   ❌ All WETH→BNKR fee tiers failed. WETH remains in wallet.`);
           }
         } catch (err) {
-          console.log(`   ❌ V4 token swap failed: ${err.shortMessage || err.message}`);
+          console.log(`   ❌ WETH→BNKR swap failed: ${err.shortMessage || err.message}`);
         }
-      } else if (harvestToken > 0n) {
-        console.log(`   ⚠️ No pool key available for V4 swap (need --token-id)`);
       }
 
-      // Measure USDC gained
-      await sleep(1000);
-      const usdcAfter = await pub.readContract({ address: C.USDC, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
-      harvestedUsdc = usdcAfter - usdcBefore;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 5: Transfer USDC to vault
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (harvestedUsdc > 0n) {
-      console.log(`\n📌 Step: Transfer USDC → vault`);
-      console.log(`   Amount: ${formatUnits(harvestedUsdc, 6)} USDC`);
-
-      if (cfg.dryRun) {
-        console.log(`   🔮 Would transfer to ${cfg.harvestAddress}`);
-      } else {
+      // Transfer USDC to treasury
+      if (harvestedUsdc > 0n && treasuryAddr) {
+        console.log(`\n📌 Step: Transfer USDC → treasury`);
+        console.log(`   Amount: ${formatUnits(harvestedUsdc, 6)} USDC → ${treasuryAddr}`);
         const tx = await wallet.writeContract({
           address: C.USDC, abi: ERC20, functionName: 'transfer',
-          args: [cfg.harvestAddress, harvestedUsdc],
+          args: [treasuryAddr, harvestedUsdc],
         });
         await pub.waitForTransactionReceipt({ hash: tx });
-        console.log(`   ✅ Sent! TX: https://basescan.org/tx/${tx}`);
+        usdcTxHash = tx;
+        console.log(`   ✅ USDC sent! TX: https://basescan.org/tx/${tx}`);
+        await sleep(500);
       }
-    } else if (!cfg.dryRun && harvestWeth > 0n) {
-      console.log(`   ⚠️ No USDC to transfer`);
+
+      // Transfer BNKR to treasury
+      if (harvestedBnkr > 0n && treasuryAddr) {
+        console.log(`\n📌 Step: Transfer BNKR → treasury`);
+        console.log(`   Amount: ${formatEther(harvestedBnkr)} BNKR → ${treasuryAddr}`);
+        const tx = await wallet.writeContract({
+          address: C.BNKR, abi: ERC20, functionName: 'transfer',
+          args: [treasuryAddr, harvestedBnkr],
+        });
+        await pub.waitForTransactionReceipt({ hash: tx });
+        bnkrTxHash = tx;
+        console.log(`   ✅ BNKR sent! TX: https://basescan.org/tx/${tx}`);
+      }
     }
   }
 
@@ -900,12 +938,10 @@ ${cfg.dryRun ? '🔮  DRY RUN' : '🔥  LIVE'}
 ═══════════════════════════════════════════════════
    Total fees:     $${totalUsd.toFixed(2)}
    Clanker fees:   ${formatEther(claimedWeth)} WETH + ${formatEther(claimedToken)} ${symbol}
-   LP fees:        ${formatEther(lpWeth)} WETH + ${formatEther(lpToken)} ${symbol}${burnedToken > 0n ? `\n   🔥 Burned:      ${formatEther(burnedToken)} ${symbol} (~$${(parseFloat(formatEther(burnedToken)) * tokenPrice).toFixed(2)})` : ''}${burnTxHash ? `\n   Burn TX:       https://basescan.org/tx/${burnTxHash}` : ''}
-   Compounded:     ${cfg.compoundPct}% → LP #${cfg.tokenId || 'N/A'}
-   Harvested:      ${harvestPct}% → ${harvestedUsdc > 0n ? formatUnits(harvestedUsdc, 6) + ' USDC' : 'pending'}
+   LP fees:        ${formatEther(lpWeth)} WETH + ${formatEther(lpToken)} ${symbol}${burnedToken > 0n ? `\n   🔥 Burned:      ${formatEther(burnedToken)} ${symbol} (~$${(parseFloat(formatEther(burnedToken)) * tokenPrice).toFixed(2)})` : ''}${burnTxHash ? `\n   Burn TX:       https://basescan.org/tx/${burnTxHash}` : ''}${harvestedUsdc > 0n ? `\n   💵 USDC:       ${formatUnits(harvestedUsdc, 6)} USDC → treasury` : ''}${usdcTxHash ? `\n   USDC TX:      https://basescan.org/tx/${usdcTxHash}` : ''}${harvestedBnkr > 0n ? `\n   🏦 BNKR:       ${formatEther(harvestedBnkr)} BNKR → treasury` : ''}${bnkrTxHash ? `\n   BNKR TX:      https://basescan.org/tx/${bnkrTxHash}` : ''}${treasuryAddr ? `\n   Treasury:     ${treasuryAddr}` : ''}
 ═══════════════════════════════════════════════════`);
 
-  return { totalUsd, compounded: cfg.compoundPct, harvested: parseFloat(formatUnits(harvestedUsdc, 6)), burned: parseFloat(formatEther(burnedToken)), burnTxHash };
+  return { totalUsd, compounded: cfg.compoundPct, harvested: parseFloat(formatUnits(harvestedUsdc, 6)), harvestedBnkr: parseFloat(formatEther(harvestedBnkr)), burned: parseFloat(formatEther(burnedToken)), burnTxHash, usdcTxHash, bnkrTxHash };
 }
 
 main().catch(err => { console.error('❌ Fatal:', err.message); process.exit(1); });
