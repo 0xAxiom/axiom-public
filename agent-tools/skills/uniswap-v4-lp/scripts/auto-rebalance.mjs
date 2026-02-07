@@ -1131,29 +1131,10 @@ async function main() {
     console.log(`   Status: ✅ CENTERED (${drift.driftPct.toFixed(1)}% drift < ${thresholdPct}% threshold)`);
   }
 
-  // ─── 5. COMPOUND if centered ──────────────────────────────────────────────
+  // ─── 5. IN RANGE — no action (fees harvested separately by hourly cron) ──
   if (!needsRebalance) {
-    if (argv.dryRun) {
-      console.log(`\n🔮 Dry run: Would compound fees. Position is well-centered.`);
-      console.log(`IN_RANGE — drift ${drift.driftPct.toFixed(1)}%, threshold ${thresholdPct}%`);
-      process.exit(0);
-    }
-
-    console.log('\n⏳ Compounding fees (position well-centered)...');
-    try {
-      const result = await compoundFees(
-        publicClient, walletClient, account, tokenId, poolKey,
-        sqrtPriceX96, tickLower, tickUpper
-      );
-      if (result.compounded) {
-        console.log(`\nIN_RANGE — compounded fees (${formatEther(result.fees0)} WETH + ${formatEther(result.fees1)} AXIOM)`);
-      } else {
-        console.log('\nIN_RANGE — no fees to compound');
-      }
-    } catch (err) {
-      console.error(`\n❌ Compound failed: ${err.message}`);
-      process.exit(1);
-    }
+    console.log(`\nIN_RANGE — drift ${drift.driftPct.toFixed(1)}%, threshold ${thresholdPct}%`);
+    console.log(`   Fees are harvested hourly by separate cron. No action needed.`);
     process.exit(0);
   }
 
