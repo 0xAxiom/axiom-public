@@ -1,0 +1,39 @@
+{
+  "statePath": "~/.config/context-injector/current-state.json",
+  "sources": {
+    "fund1": {
+      "contract": "0x5480f8599cCFe80484345320Ba43a210A3adbA0C",
+      "chain": "base",
+      "chainId": 8453,
+      "rpc": "https://mainnet.base.org"
+    },
+    "axiomToken": {
+      "ca": "0xf3ce5ddaab6c133f9875a4a46c55cf0b58111b07",
+      "deadAddress": "0x000000000000000000000000000000000000dead",
+      "chainId": 8453
+    }
+  },
+  "contextPlaceholder": "{{CONTEXT}}",
+  "cronJobFilter": {
+    "nameContains": ["twitter", "standup", "wrap", "build"]
+  },
+  "identity": {
+    "twitter": "@AxiomBot",
+    "wallet": "0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5",
+    "basename": "axiombotx.base.eth",
+    "repo": "github.com/0xAxiom/axiom-public"
+  },
+  "projects": {
+    "appFactory": {
+      "site": "appfactory.fun",
+      "token": "BkSbFrDMkfkoG4NDUwadEGeQgVwoXkR3F3P1MPUnBAGS"
+    },
+    "postera": {
+      "site": "postera.dev"
+    },
+    "axiomVentures": {
+      "site": "axiomventures.xyz",
+      "opensea": "opensea.io/collection/axiom-ventures"
+    }
+  }
+}
