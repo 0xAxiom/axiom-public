@@ -45,11 +45,14 @@ if (configPath && fs.existsSync(configPath)) {
   config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
 
+const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
+
 const cfg = {
   token:          getArg('token', config.token || null),
   tokenId:        getArg('token-id', config.tokenId || null),
   harvestAddress: getArg('harvest-address', config.harvestAddress || null),
   compoundPct:    parseInt(getArg('compound-pct', config.compoundPct ?? '100')),
+  burnPct:        parseInt(getArg('burn-pct', config.burnPct ?? '0')),
   minUsd:         parseFloat(getArg('min-usd', config.minUsd ?? '0')),
   slippage:       parseFloat(getArg('slippage', config.slippage ?? '1')),
   feeContract:    getArg('fee-contract', config.feeContract || '0xf3622742b1e446d92e45e22923ef11c2fcd55d68'),
@@ -58,7 +61,8 @@ const cfg = {
   skipLp:         hasFlag('skip-lp') || config.skipLp === true,
 };
 
-const harvestPct = 100 - cfg.compoundPct;
+const wantBurn = cfg.burnPct > 0;
+const harvestPct = 100 - cfg.compoundPct - cfg.burnPct;
 const wantCompound = cfg.compoundPct > 0 && cfg.tokenId;
 const wantHarvest = harvestPct > 0 && cfg.harvestAddress;
 
@@ -304,6 +308,7 @@ async function main() {
   const steps = [];
   if (!cfg.skipClaim) steps.push('claim');
   if (!cfg.skipLp && cfg.tokenId) steps.push('collect-lp');
+  if (wantBurn) steps.push(`burn(${cfg.burnPct}%)→🔥`);
   if (wantCompound) steps.push(`compound(${cfg.compoundPct}%)`);
   if (wantHarvest) steps.push(`harvest(${harvestPct}%)→USDC`);
 
@@ -469,13 +474,221 @@ ${cfg.dryRun ? '🔮  DRY RUN' : '🔥  LIVE'}
     return { totalUsd, compounded: 0, harvested: 0, belowThreshold: true };
   }
 
-  // Split
-  const compoundWeth = totalWeth * BigInt(cfg.compoundPct) / 100n;
-  const compoundToken = totalToken * BigInt(cfg.compoundPct) / 100n;
-  const harvestWeth = totalWeth - compoundWeth;
-  const harvestToken = totalToken - compoundToken;
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STEP: Buy & Burn (rebalance so burnPct% is in AXIOM, then burn)
+  // ═══════════════════════════════════════════════════════════════════════════
+  let burnedToken = 0n;
+  let burnTxHash = null;
 
-  console.log(`\n📊 Split: ${cfg.compoundPct}% compound / ${harvestPct}% harvest`);
+  if (wantBurn && (totalWeth > 0n || totalToken > 0n)) {
+    console.log(`\n🔥 Step: Buy & Burn (${cfg.burnPct}% of total value)`);
+
+    // Calculate current USD values
+    const wethValueUsd = parseFloat(formatEther(totalWeth)) * ethPrice;
+    const tokenValueUsd = parseFloat(formatEther(totalToken)) * tokenPrice;
+    const totalValueUsd = wethValueUsd + tokenValueUsd;
+    const burnTargetUsd = totalValueUsd * cfg.burnPct / 100;
+
+    console.log(`   Total value: $${totalValueUsd.toFixed(2)}`);
+    console.log(`   Burn target: $${burnTargetUsd.toFixed(2)} (${cfg.burnPct}%)`);
+    console.log(`   Current AXIOM value: $${tokenValueUsd.toFixed(2)}`);
+    console.log(`   Current WETH value: $${wethValueUsd.toFixed(2)}`);
+
+    if (tokenPrice <= 0) {
+      console.log(`   ❌ Cannot burn — token price is $0, would lose everything`);
+    } else if (cfg.dryRun) {
+      console.log(`   🔮 Would rebalance and burn`);
+    } else {
+      // Ensure we have pool key for V4 swaps
+      if (!poolKey && cfg.tokenId) {
+        const [pk_result] = await retry(() => pub.readContract({
+          address: C.POSITION_MANAGER, abi: PM_ABI,
+          functionName: 'getPoolAndPositionInfo', args: [BigInt(cfg.tokenId)],
+        }));
+        poolKey = pk_result;
+      }
+
+      // How much AXIOM do we need for the burn?
+      const burnTargetTokens = BigInt(Math.floor(burnTargetUsd / tokenPrice * 1e18));
+
+      // Get current token balance in wallet
+      const currentTokenBal = await pub.readContract({
+        address: cfg.token, abi: ERC20, functionName: 'balanceOf', args: [account.address],
+      });
+
+      if (currentTokenBal >= burnTargetTokens) {
+        // We have enough AXIOM already — might need to sell excess AXIOM→WETH
+        const excessToken = currentTokenBal - burnTargetTokens;
+        if (excessToken > 0n && poolKey) {
+          const excessUsd = parseFloat(formatEther(excessToken)) * tokenPrice;
+          if (excessUsd > 1) { // only swap if > $1 excess
+            console.log(`   Selling excess ${formatEther(excessToken)} ${symbol} → WETH (worth ~$${excessUsd.toFixed(2)})...`);
+            try {
+              await swapTokenToWethV4(pub, wallet, account, cfg.token, excessToken, poolKey);
+              await sleep(2000);
+            } catch (err) {
+              console.log(`   ⚠️ Excess token→WETH swap failed: ${err.shortMessage || err.message}`);
+            }
+          }
+        }
+        burnedToken = burnTargetTokens;
+      } else {
+        // Need to buy more AXIOM with WETH
+        const shortfallUsd = burnTargetUsd - (parseFloat(formatEther(currentTokenBal)) * tokenPrice);
+        const wethNeeded = BigInt(Math.floor(shortfallUsd / ethPrice * 1e18));
+        
+        // Check we have enough WETH
+        const currentWethBal = await pub.readContract({
+          address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address],
+        });
+        const swapWeth = wethNeeded < currentWethBal ? wethNeeded : currentWethBal;
+
+        if (swapWeth > 0n && poolKey) {
+          console.log(`   Buying ${symbol} with ${formatEther(swapWeth)} WETH (~$${(parseFloat(formatEther(swapWeth)) * ethPrice).toFixed(2)})...`);
+          try {
+            // Swap WETH → TOKEN via V4 (reverse direction)
+            // We need to use Universal Router for WETH→TOKEN
+            const tokenIsC0 = cfg.token.toLowerCase() === poolKey.currency0.toLowerCase();
+            const zeroForOne = !tokenIsC0; // WETH is the input, so if token is c0, we go c1→c0
+
+            // ERC20 → Permit2 approval for WETH
+            const erc20Allow = await retry(() => pub.readContract({
+              address: C.WETH, abi: ERC20, functionName: 'allowance',
+              args: [account.address, C.PERMIT2],
+            }));
+            if (erc20Allow < swapWeth) {
+              console.log(`   Approving WETH → Permit2...`);
+              const tx = await wallet.writeContract({
+                address: C.WETH, abi: ERC20, functionName: 'approve',
+                args: [C.PERMIT2, maxUint256],
+              });
+              await pub.waitForTransactionReceipt({ hash: tx });
+              await sleep(1000);
+            }
+
+            // Permit2 → Universal Router approval for WETH
+            const [p2Amount] = await retry(() => pub.readContract({
+              address: C.PERMIT2, abi: PERMIT2_ABI, functionName: 'allowance',
+              args: [account.address, C.WETH, C.UNIVERSAL_ROUTER],
+            }));
+            if (BigInt(p2Amount) < swapWeth) {
+              console.log(`   Approving Universal Router on Permit2 for WETH...`);
+              const maxU160 = (1n << 160n) - 1n;
+              const maxU48 = (1n << 48n) - 1n;
+              const tx = await wallet.writeContract({
+                address: C.PERMIT2, abi: PERMIT2_ABI, functionName: 'approve',
+                args: [C.WETH, C.UNIVERSAL_ROUTER, maxU160, maxU48],
+              });
+              await pub.waitForTransactionReceipt({ hash: tx });
+              await sleep(1000);
+            }
+
+            const inputCurrency = zeroForOne ? poolKey.currency0 : poolKey.currency1;
+            const outputCurrency = zeroForOne ? poolKey.currency1 : poolKey.currency0;
+
+            const swapParams = defaultAbiCoder.encode(
+              ['tuple(tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) poolKey, bool zeroForOne, uint128 amountIn, uint128 amountOutMinimum, bytes hookData)'],
+              [{
+                poolKey: { currency0: poolKey.currency0, currency1: poolKey.currency1, fee: poolKey.fee, tickSpacing: poolKey.tickSpacing, hooks: poolKey.hooks },
+                zeroForOne,
+                amountIn: swapWeth.toString(),
+                amountOutMinimum: '0',
+                hookData: '0x',
+              }]
+            );
+            const settleParams = defaultAbiCoder.encode(['address', 'uint256'], [inputCurrency, swapWeth.toString()]);
+            const takeParams = defaultAbiCoder.encode(['address', 'uint256'], [outputCurrency, '0']);
+            const v4SwapInput = defaultAbiCoder.encode(['bytes', 'bytes[]'], ['0x060c0f', [swapParams, settleParams, takeParams]]);
+
+            const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+            const hash = await wallet.writeContract({
+              address: C.UNIVERSAL_ROUTER, abi: UNIVERSAL_ROUTER_ABI,
+              functionName: 'execute',
+              args: ['0x10', [v4SwapInput], deadline],
+            });
+            const receipt = await pub.waitForTransactionReceipt({ hash });
+            if (receipt.status !== 'success') throw new Error(`V4 swap reverted: ${hash}`);
+            console.log(`   ✅ WETH → ${symbol}: ${hash.slice(0, 20)}...`);
+            await sleep(2000);
+          } catch (err) {
+            console.log(`   ❌ WETH→${symbol} swap failed: ${err.shortMessage || err.message}`);
+          }
+        }
+
+        // Recheck token balance after swap
+        const newTokenBal = await pub.readContract({
+          address: cfg.token, abi: ERC20, functionName: 'balanceOf', args: [account.address],
+        });
+        burnedToken = newTokenBal < burnTargetTokens ? newTokenBal : burnTargetTokens;
+      }
+
+      // BURN: Transfer tokens to dead address
+      if (burnedToken > 0n) {
+        console.log(`   🔥 Burning ${formatEther(burnedToken)} ${symbol} (~$${(parseFloat(formatEther(burnedToken)) * tokenPrice).toFixed(2)})...`);
+        const tx = await wallet.writeContract({
+          address: cfg.token, abi: ERC20, functionName: 'transfer',
+          args: [DEAD_ADDRESS, burnedToken],
+        });
+        await pub.waitForTransactionReceipt({ hash: tx });
+        burnTxHash = tx;
+        console.log(`   ✅ Burned! TX: https://basescan.org/tx/${tx}`);
+        await sleep(1000);
+      } else {
+        console.log(`   ⚠️ No tokens to burn after rebalancing`);
+      }
+    }
+
+    // Update totals after burn (remaining goes to compound/harvest)
+    const remainingWeth = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+    const remainingToken = await pub.readContract({ address: cfg.token, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+
+    // Recalculate with remaining balances for compound/harvest split
+    // The burn has consumed its share; remaining is split between compound and harvest
+    const remainingPct = 100 - cfg.burnPct;
+    const compoundOfRemaining = remainingPct > 0 ? cfg.compoundPct * 100 / remainingPct : 0;
+    const harvestOfRemaining = remainingPct > 0 ? harvestPct * 100 / remainingPct : 0;
+
+    console.log(`   Remaining after burn: ${formatEther(remainingWeth)} WETH + ${formatEther(remainingToken)} ${symbol}`);
+  }
+
+  // Split remaining for compound/harvest (use wallet balances post-burn)
+  let compoundWeth, compoundToken, harvestWethAmt, harvestTokenAmt;
+
+  if (wantBurn) {
+    // After burn, use actual wallet balances
+    const walletWeth = await pub.readContract({ address: C.WETH, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+    const walletToken = await pub.readContract({ address: cfg.token, abi: ERC20, functionName: 'balanceOf', args: [account.address] });
+    
+    if (wantCompound && wantHarvest) {
+      const compRatio = BigInt(cfg.compoundPct);
+      const totalRatio = BigInt(cfg.compoundPct + harvestPct);
+      compoundWeth = walletWeth * compRatio / totalRatio;
+      compoundToken = walletToken * compRatio / totalRatio;
+      harvestWethAmt = walletWeth - compoundWeth;
+      harvestTokenAmt = walletToken - compoundToken;
+    } else if (wantCompound) {
+      compoundWeth = walletWeth;
+      compoundToken = walletToken;
+      harvestWethAmt = 0n;
+      harvestTokenAmt = 0n;
+    } else {
+      compoundWeth = 0n;
+      compoundToken = 0n;
+      harvestWethAmt = walletWeth;
+      harvestTokenAmt = walletToken;
+    }
+  } else {
+    compoundWeth = totalWeth * BigInt(cfg.compoundPct) / 100n;
+    compoundToken = totalToken * BigInt(cfg.compoundPct) / 100n;
+    harvestWethAmt = totalWeth - compoundWeth;
+    harvestTokenAmt = totalToken - compoundToken;
+  }
+
+  const harvestWeth = harvestWethAmt;
+  const harvestToken = harvestTokenAmt;
+
+  console.log(`\n📊 Split: ${cfg.burnPct > 0 ? cfg.burnPct + '% burn / ' : ''}${cfg.compoundPct}% compound / ${harvestPct}% harvest`);
+  if (wantBurn && burnedToken > 0n) console.log(`   Burned:   ${formatEther(burnedToken)} ${symbol} (~$${(parseFloat(formatEther(burnedToken)) * tokenPrice).toFixed(2)})`);
   if (wantCompound) console.log(`   Compound: ${formatEther(compoundWeth)} WETH + ${formatEther(compoundToken)} ${symbol}`);
   if (wantHarvest) console.log(`   Harvest:  ${formatEther(harvestWeth)} WETH + ${formatEther(harvestToken)} ${symbol}`);
 
@@ -687,12 +900,12 @@ ${cfg.dryRun ? '🔮  DRY RUN' : '🔥  LIVE'}
 ═══════════════════════════════════════════════════
    Total fees:     $${totalUsd.toFixed(2)}
    Clanker fees:   ${formatEther(claimedWeth)} WETH + ${formatEther(claimedToken)} ${symbol}
-   LP fees:        ${formatEther(lpWeth)} WETH + ${formatEther(lpToken)} ${symbol}
+   LP fees:        ${formatEther(lpWeth)} WETH + ${formatEther(lpToken)} ${symbol}${burnedToken > 0n ? `\n   🔥 Burned:      ${formatEther(burnedToken)} ${symbol} (~$${(parseFloat(formatEther(burnedToken)) * tokenPrice).toFixed(2)})` : ''}${burnTxHash ? `\n   Burn TX:       https://basescan.org/tx/${burnTxHash}` : ''}
    Compounded:     ${cfg.compoundPct}% → LP #${cfg.tokenId || 'N/A'}
    Harvested:      ${harvestPct}% → ${harvestedUsdc > 0n ? formatUnits(harvestedUsdc, 6) + ' USDC' : 'pending'}
 ═══════════════════════════════════════════════════`);
 
-  return { totalUsd, compounded: cfg.compoundPct, harvested: parseFloat(formatUnits(harvestedUsdc, 6)) };
+  return { totalUsd, compounded: cfg.compoundPct, harvested: parseFloat(formatUnits(harvestedUsdc, 6)), burned: parseFloat(formatEther(burnedToken)), burnTxHash };
 }
 
 main().catch(err => { console.error('❌ Fatal:', err.message); process.exit(1); });
