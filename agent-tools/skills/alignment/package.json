@@ -1,0 +1,35 @@
+{
+  "name": "alignment",
+  "version": "1.0.0",
+  "description": "Clanker fee burn pipeline using Bankr API - no private keys needed",
+  "main": "alignment.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node alignment.mjs",
+    "dry-run": "node alignment.mjs --dry-run",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "clanker",
+    "burn",
+    "bankr",
+    "fees",
+    "alignment",
+    "defi",
+    "base",
+    "agent"
+  ],
+  "author": "Axiom",
+  "license": "MIT",
+  "dependencies": {
+    "viem": "^2.21.53",
+    "yargs": "^17.7.2",
+    "@ethersproject/abi": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "alignment": "./alignment.mjs"
+  }
+}
