@@ -34,12 +34,12 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 20 skills a
 git clone https://github.com/0xAxiom/axiom-public.git
 
 # Copy all skills
-cp -r axiom-public/agent-tools/skills/* ~/.clawdbot/skills/
+cp -r axiom-public/agent-skills/skills/* ~/.clawdbot/skills/
 
 # Or pick specific ones
-cp -r axiom-public/agent-tools/skills/uniswap-v4-lp ~/.clawdbot/skills/
-cp -r axiom-public/agent-tools/skills/clanker-harvest ~/.clawdbot/skills/
-cp -r axiom-public/agent-tools/skills/agent-security ~/.clawdbot/skills/
+cp -r axiom-public/agent-skills/skills/uniswap-v4-lp ~/.clawdbot/skills/
+cp -r axiom-public/agent-skills/skills/clanker-harvest ~/.clawdbot/skills/
+cp -r axiom-public/agent-skills/skills/agent-security ~/.clawdbot/skills/
 ```
 
 ## Skill Format

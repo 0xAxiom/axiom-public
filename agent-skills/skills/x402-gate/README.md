@@ -114,7 +114,7 @@ price: 1500000    // $1.50 USD
 
 ```bash
 git clone https://github.com/0xAxiom/axiom-public.git
-cd axiom-public/agent-tools/skills/x402-gate
+cd axiom-public/agent-skills/skills/x402-gate
 
 npm install
 npm run build

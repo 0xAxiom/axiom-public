@@ -3,7 +3,7 @@
 ## 📦 Installation
 
 ```bash
-cd /Users/melted/Github/axiom-public/agent-tools/skills/clanker-burn
+cd /Users/melted/Github/axiom-public/agent-skills/skills/clanker-burn
 npm install
 ```
 

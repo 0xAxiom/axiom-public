@@ -50,44 +50,44 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 
 | Skill | Description |
 |-------|-------------|
-| 🚀 [agent-launchpad](./agent-tools/skills/agent-launchpad/) | One API call to tokenize your agent on Base — wallet, token, 75% LP fees |
-| 📊 [agent-launch-monitor](./agent-tools/skills/agent-launch-monitor/) | Track post-launch metrics for tokens deployed via Agent Launchpad or any Base token |
-| 🏗️ [agent-ops](./agent-tools/skills/agent-ops/) | Workflow orchestration, sub-agents, task management |
-| 🛡️ [agent-security](./agent-tools/skills/agent-security/) | Security guardrails, audit tools, secret scanner |
-| 🎯 [alignment](./agent-tools/skills/alignment/) | Clanker fee burn pipeline using Bankr API - no private keys needed |
-| 📝 [article-pipeline](./agent-tools/skills/article-pipeline/) | End-to-end article delivery: markdown draft to X Articles-ready package |
-| 🏆 [bankr-airdrop](./agent-tools/skills/bankr-airdrop/) | Query Bankr leaderboard rankings, user profiles, and export wallet lists for airdrops |
-| 🏷️ [basename-register](./agent-tools/skills/basename-register/) | Register `.base.eth` names for AI agent wallets on Base |
-| 🔥 [clanker-burn](./agent-tools/skills/clanker-burn/) | Automated end-to-end Clanker fee claim → rebalance → burn → treasury pipeline |
-| 🧹 [clanker-harvest](./agent-tools/skills/clanker-harvest/) | Claims Clanker fees and implements 50% buy-and-burn mechanism for $AXIOM token |
-| 🦞 [clawfomo-bot](./agent-tools/skills/clawfomo-bot/) | Algorithmic player for the ClawFomo game using Smart Vulture strategy |
-| 📈 [coingecko-price](./agent-tools/skills/coingecko-price/) | Real-time crypto prices, alerts, market data |
-| 🧠 [context-injector](./agent-tools/skills/context-injector/) | Live on-chain context for cron jobs (prevents stale data) |
-| 📡 [net-protocol](./agent-tools/skills/net-protocol/) | Send and read onchain messages via Net Protocol for permanent agent communication on Base |
-| 🎯 [pitch-submit](./agent-tools/skills/pitch-submit/) | Submit structured funding pitches to Axiom Ventures, the AI-agent-managed VC fund on Base |
-| 🔥 [token-burn](./agent-tools/skills/token-burn/) | Open-source pipeline for claiming Clanker protocol fees and executing 50/50 buy-and-burn strategy |
-| 🐦 [twitter-algorithm](./agent-tools/skills/twitter-algorithm/) | Optimize tweets for organic reach using insights from Twitter's open-source algorithm |
-| ✅ [tx-verify](./agent-tools/skills/tx-verify/) | Verify blockchain transactions actually succeeded before announcing success |
-| 🦄 [uniswap-v4-lp](./agent-tools/skills/uniswap-v4-lp/) | Uniswap V4 liquidity management on Base |
-| 💳 [wallet-health](./agent-tools/skills/wallet-health/) | Monitor wallet balances, gas, Clanker fees |
-| ⚡ [x402-builder](./agent-tools/skills/x402-builder/) | Build paid APIs, agent services, and MCP tools using the x402 payment protocol on Base |
-| 🔒 [x402-gate](./agent-tools/skills/x402-gate/) | Content gating with x402 payments |
+| 🚀 [agent-launchpad](./agent-skills/skills/agent-launchpad/) | One API call to tokenize your agent on Base — wallet, token, 75% LP fees |
+| 📊 [agent-launch-monitor](./agent-skills/skills/agent-launch-monitor/) | Track post-launch metrics for tokens deployed via Agent Launchpad or any Base token |
+| 🏗️ [agent-ops](./agent-skills/skills/agent-ops/) | Workflow orchestration, sub-agents, task management |
+| 🛡️ [agent-security](./agent-skills/skills/agent-security/) | Security guardrails, audit tools, secret scanner |
+| 🎯 [alignment](./agent-skills/skills/alignment/) | Clanker fee burn pipeline using Bankr API - no private keys needed |
+| 📝 [article-pipeline](./agent-skills/skills/article-pipeline/) | End-to-end article delivery: markdown draft to X Articles-ready package |
+| 🏆 [bankr-airdrop](./agent-skills/skills/bankr-airdrop/) | Query Bankr leaderboard rankings, user profiles, and export wallet lists for airdrops |
+| 🏷️ [basename-register](./agent-skills/skills/basename-register/) | Register `.base.eth` names for AI agent wallets on Base |
+| 🔥 [clanker-burn](./agent-skills/skills/clanker-burn/) | Automated end-to-end Clanker fee claim → rebalance → burn → treasury pipeline |
+| 🧹 [clanker-harvest](./agent-skills/skills/clanker-harvest/) | Claims Clanker fees and implements 50% buy-and-burn mechanism for $AXIOM token |
+| 🦞 [clawfomo-bot](./agent-skills/skills/clawfomo-bot/) | Algorithmic player for the ClawFomo game using Smart Vulture strategy |
+| 📈 [coingecko-price](./agent-skills/skills/coingecko-price/) | Real-time crypto prices, alerts, market data |
+| 🧠 [context-injector](./agent-skills/skills/context-injector/) | Live on-chain context for cron jobs (prevents stale data) |
+| 📡 [net-protocol](./agent-skills/skills/net-protocol/) | Send and read onchain messages via Net Protocol for permanent agent communication on Base |
+| 🎯 [pitch-submit](./agent-skills/skills/pitch-submit/) | Submit structured funding pitches to Axiom Ventures, the AI-agent-managed VC fund on Base |
+| 🔥 [token-burn](./agent-skills/skills/token-burn/) | Open-source pipeline for claiming Clanker protocol fees and executing 50/50 buy-and-burn strategy |
+| 🐦 [twitter-algorithm](./agent-skills/skills/twitter-algorithm/) | Optimize tweets for organic reach using insights from Twitter's open-source algorithm |
+| ✅ [tx-verify](./agent-skills/skills/tx-verify/) | Verify blockchain transactions actually succeeded before announcing success |
+| 🦄 [uniswap-v4-lp](./agent-skills/skills/uniswap-v4-lp/) | Uniswap V4 liquidity management on Base |
+| 💳 [wallet-health](./agent-skills/skills/wallet-health/) | Monitor wallet balances, gas, Clanker fees |
+| ⚡ [x402-builder](./agent-skills/skills/x402-builder/) | Build paid APIs, agent services, and MCP tools using the x402 payment protocol on Base |
+| 🔒 [x402-gate](./agent-skills/skills/x402-gate/) | Content gating with x402 payments |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
 
 ```bash
 git clone https://github.com/0xAxiom/axiom-public.git
-cp -r axiom-public/agent-tools/skills/SKILL_NAME ~/.openclaw/skills/
+cp -r axiom-public/agent-skills/skills/SKILL_NAME ~/.openclaw/skills/
 ```
 
 </details>
 
 ## Scripts
 
-Standalone utilities in [`agent-tools/scripts/`](./agent-tools/scripts/):
+Standalone utilities in [`agent-skills/scripts/`](./agent-skills/scripts/):
 
-- **[twitter-api.py](./agent-tools/scripts/twitter-api.py)** — Twitter/X API (OAuth 1.0a): tweet, reply, like, retweet, delete, bio, search, mentions
+- **[twitter-api.py](./agent-skills/scripts/twitter-api.py)** — Twitter/X API (OAuth 1.0a): tweet, reply, like, retweet, delete, bio, search, mentions
 
 ## Writing
 

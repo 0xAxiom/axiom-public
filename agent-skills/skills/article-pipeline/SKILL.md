@@ -26,7 +26,7 @@ Takes a markdown article and produces:
 
 ```bash
 # Deliver article + banner to Telegram
-node ~/Github/axiom-public/agent-tools/skills/article-pipeline/scripts/pipeline.mjs \
+node ~/Github/axiom-public/agent-skills/skills/article-pipeline/scripts/pipeline.mjs \
   /tmp/article-draft.md \
   --banner-prompt "Dark abstract composition, neural network topology, black background" \
   --telegram  # outputs instructions for message tool delivery

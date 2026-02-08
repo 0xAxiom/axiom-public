@@ -142,7 +142,7 @@ When asked to "burn Clanker fees" or "run burn cycle":
 
 ```bash
 # Step 1: Dry run
-cd /Users/melted/Github/axiom-public/agent-tools/skills/clanker-burn
+cd /Users/melted/Github/axiom-public/agent-skills/skills/clanker-burn
 node burn.mjs --token 0xf3ce... --treasury 0x19fe... --dry-run
 
 # Step 2: Review output, confirm with human

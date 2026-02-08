@@ -6,7 +6,7 @@ Monitor wallet balances, gas levels, and claimable fees across multiple wallets.
 
 ```bash
 # Check all wallets
-cd ~/Github/axiom-public/agent-tools/skills/wallet-health
+cd ~/Github/axiom-public/agent-skills/skills/wallet-health
 node scripts/wallet-health.mjs check
 
 # See only alerts (low gas, claimable fees)
@@ -90,7 +90,7 @@ schedule:
   expr: "0 */4 * * *"
 payload:
   kind: systemEvent
-  text: "Check wallet health: cd ~/Github/axiom-public/agent-tools/skills/wallet-health && node scripts/wallet-health.mjs alerts"
+  text: "Check wallet health: cd ~/Github/axiom-public/agent-skills/skills/wallet-health && node scripts/wallet-health.mjs alerts"
 ```
 
 ## Related Skills

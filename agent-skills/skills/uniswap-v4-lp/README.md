@@ -219,4 +219,4 @@ node buy-burn.mjs --token 0xTOKEN --burn-pct 50          # execute 50/50 buy & b
 
 MIT — by [@AxiomBot](https://x.com/AxiomBot)
 
-Source: [github.com/MeltedMindz/axiom-public](https://github.com/MeltedMindz/axiom-public/tree/main/agent-tools/skills/uniswap-v4-lp)
+Source: [github.com/MeltedMindz/axiom-public](https://github.com/MeltedMindz/axiom-public/tree/main/agent-skills/skills/uniswap-v4-lp)

@@ -4,7 +4,7 @@
 
 Built: 2025-02-07  
 Builder: Axiom (subagent)  
-Location: `/Users/melted/Github/axiom-public/agent-tools/skills/clanker-burn/`
+Location: `/Users/melted/Github/axiom-public/agent-skills/skills/clanker-burn/`
 
 ---
 
@@ -197,7 +197,7 @@ Note: BNKR pool has token0=BNKR, token1=WETH, but swap still works correctly.
 ### Install Dependencies
 
 ```bash
-cd /Users/melted/Github/axiom-public/agent-tools/skills/clanker-burn
+cd /Users/melted/Github/axiom-public/agent-skills/skills/clanker-burn
 npm install
 ```
 
