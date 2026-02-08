@@ -1,0 +1,27 @@
+{
+  "name": "clanker-burn",
+  "version": "1.0.0",
+  "description": "Complete Clanker fee claim → rebalance → burn → treasury pipeline",
+  "type": "module",
+  "main": "burn.mjs",
+  "scripts": {
+    "burn": "node burn.mjs",
+    "test": "node burn.mjs --dry-run"
+  },
+  "keywords": [
+    "clanker",
+    "burn",
+    "uniswap",
+    "v4",
+    "base",
+    "defi"
+  ],
+  "dependencies": {
+    "@ethersproject/abi": "^5.7.0",
+    "viem": "^2.21.54",
+    "yargs": "^17.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

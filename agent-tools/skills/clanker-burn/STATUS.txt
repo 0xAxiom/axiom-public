@@ -1,0 +1,80 @@
+╔══════════════════════════════════════════════════════════════╗
+║           CLANKER FEE BURN SKILL — BUILD COMPLETE            ║
+╚══════════════════════════════════════════════════════════════╝
+
+📦 LOCATION
+/Users/melted/Github/axiom-public/agent-tools/skills/clanker-burn/
+
+✅ DELIVERABLES (8 files)
+  1. burn.mjs             — 656 lines, complete pipeline
+  2. SKILL.md             — Agent usage documentation
+  3. README.md            — Human-readable guide
+  4. IMPLEMENTATION.md    — Technical deep-dive
+  5. CHECKLIST.md         — Pre-flight verification
+  6. QUICK_REF.md         — Quick reference card
+  7. package.json         — Dependencies & scripts
+  8. example.sh           — Usage examples
+
+🎯 PIPELINE IMPLEMENTATION
+  ✅ Step 1: Claim fees (WETH + token, 2 separate TXs)
+  ✅ Step 2: Get prices (CoinGecko + DexScreener)
+  ✅ Step 3: Rebalance to 50/50 BY VALUE (swap only gap)
+  ✅ Step 4: Burn ALL token balance to 0xdead
+  ✅ Step 5: Split WETH → USDC + BNKR → Treasury
+  ✅ Step 6: Report JSON with full results
+
+🛠️ TECHNICAL STACK
+  - viem v2.21+ (Ethereum interactions)
+  - yargs v17.7+ (CLI parsing)
+  - @ethersproject/abi v5.7+ (V4 swap encoding)
+  - ES modules (import/export)
+  - Node.js 18+
+
+🔒 SAFETY FEATURES
+  ✅ Dry-run mode (--dry-run flag)
+  ✅ Step-by-step error handling
+  ✅ Never burns before successful rebalance
+  ✅ Never sends to treasury before successful burn
+  ✅ Full transaction logging with BaseScan links
+  ✅ Retry logic for RPC calls
+
+📊 CONTRACTS USED
+  - Clanker Fee: 0xf3622742b1e446d92e45e22923ef11c2fcd55d68
+  - Universal Router: 0x6ff5693b99212da76ad316178a184ab56d299b43 (V4)
+  - SwapRouter02: 0x2626664c2603336E57B271c5C0b26F421741e481 (V3)
+  - Permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3
+
+🚀 READY FOR USE
+  1. npm install
+  2. export NET_PRIVATE_KEY=0x...
+  3. node burn.mjs --token 0x... --treasury 0x... --dry-run
+  4. Review output
+  5. node burn.mjs --token 0x... --treasury 0x...
+
+📝 DOCUMENTATION COMPLETE
+  - Agent instructions (SKILL.md)
+  - Human guide (README.md)
+  - Technical docs (IMPLEMENTATION.md)
+  - Pre-flight checklist (CHECKLIST.md)
+  - Quick reference (QUICK_REF.md)
+  - Usage examples (example.sh)
+
+✅ ALL REQUIREMENTS MET
+  - Single command execution
+  - No human intervention needed
+  - Exact 6-step pipeline as specified
+  - Rebalances by VALUE (not amount)
+  - Swaps only the gap
+  - Burns to 0xdead
+  - 50/50 WETH split → USDC + BNKR
+  - V3 SwapRouter02 for treasury swaps
+  - V4 Universal Router for rebalance
+  - Follows reference script patterns
+  - Clean console output with emojis
+  - Comprehensive error handling
+
+🎉 STATUS: PRODUCTION READY
+
+Built by: Builder (Axiom subagent)
+Date: 2025-02-07
+Version: 1.0.0
