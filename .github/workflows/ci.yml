@@ -1,0 +1,63 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Check all skills have READMEs
+        run: |
+          missing=0
+          for dir in agent-skills/skills/*/; do
+            if [ ! -f "$dir/README.md" ]; then
+              echo "❌ Missing README: $dir"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ $missing -gt 0 ]; then
+            echo "::error::$missing skills missing READMEs"
+            exit 1
+          fi
+          echo "✅ All skills have READMEs"
+
+      - name: Check all skills have SKILL.md
+        run: |
+          missing=0
+          for dir in agent-skills/skills/*/; do
+            if [ ! -f "$dir/SKILL.md" ]; then
+              echo "⚠️ Missing SKILL.md: $dir"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ $missing -gt 0 ]; then
+            echo "::warning::$missing skills missing SKILL.md"
+          fi
+          echo "✅ SKILL.md check complete"
+
+      - name: Validate package.json in skills
+        run: |
+          errors=0
+          for pkg in agent-skills/skills/*/package.json; do
+            if [ -f "$pkg" ]; then
+              if ! python3 -c "import json; json.load(open('$pkg'))" 2>/dev/null; then
+                echo "❌ Invalid JSON: $pkg"
+                errors=$((errors + 1))
+              fi
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            echo "::error::$errors invalid package.json files"
+            exit 1
+          fi
+          echo "✅ All package.json files valid"
+
+      - name: Count projects and skills
+        run: |
+          projects=$(ls -d projects/*/ 2>/dev/null | wc -l | tr -d ' ')
+          skills=$(ls -d agent-skills/skills/*/ 2>/dev/null | wc -l | tr -d ' ')
+          echo "## 📊 Repo Stats" >> $GITHUB_STEP_SUMMARY
+          echo "- **Projects:** $projects" >> $GITHUB_STEP_SUMMARY
+          echo "- **Skills:** $skills" >> $GITHUB_STEP_SUMMARY
+          echo "Projects: $projects | Skills: $skills"
