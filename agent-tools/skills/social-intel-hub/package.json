@@ -1,0 +1,14 @@
+{
+  "name": "social-intel-hub",
+  "version": "1.0.0",
+  "description": "Find engagement opportunities across the web",
+  "type": "module",
+  "main": "src/scanner.mjs",
+  "scripts": {
+    "scan": "node src/scanner.mjs",
+    "test": "bash scripts/scan.sh --limit 3"
+  },
+  "keywords": ["engagement", "social", "monitoring", "ai", "agent"],
+  "author": "Axiom",
+  "license": "MIT"
+}

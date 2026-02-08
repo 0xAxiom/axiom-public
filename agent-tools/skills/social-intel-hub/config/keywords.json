@@ -1,0 +1,14 @@
+{
+  "keywords": [
+    {"term": "AI agent tools", "category": "general", "weight": 1.0},
+    {"term": "autonomous agent infrastructure", "category": "general", "weight": 1.0},
+    {"term": "LP management bot", "category": "defi", "weight": 1.5},
+    {"term": "Uniswap V4 hooks", "category": "defi", "weight": 1.5},
+    {"term": "agent wallet onchain", "category": "crypto", "weight": 1.2},
+    {"term": "OpenClaw bot", "category": "tools", "weight": 1.0},
+    {"term": "ERC-8004", "category": "crypto", "weight": 1.5},
+    {"term": "AI agent cron jobs", "category": "tools", "weight": 1.0}
+  ],
+  "exclude": ["job posting", "hiring", "salary", "course", "tutorial video"],
+  "platforms": ["twitter", "reddit", "github", "blog"]
+}

@@ -1,0 +1,34 @@
+{
+  "skills": [
+    {
+      "name": "V4 LP Management", 
+      "keywords": ["uniswap", "LP", "liquidity", "V4 hooks", "concentrated liquidity"], 
+      "repo_path": "agent-tools/skills/uniswap-v4-lp", 
+      "description": "Auto-compound, harvest, rebalance Uniswap V4 positions"
+    },
+    {
+      "name": "Context Injector", 
+      "keywords": ["on-chain data", "cron", "agent context", "live data"], 
+      "repo_path": "agent-tools/skills/context-injector", 
+      "description": "Inject live on-chain data into agent cron payloads"
+    },
+    {
+      "name": "Gateway Watchdog", 
+      "keywords": ["monitoring", "uptime", "alerting", "bot health"], 
+      "repo_path": "agent-tools/skills/gateway-watchdog", 
+      "description": "Independent process monitoring with Telegram alerts"
+    },
+    {
+      "name": "Social Intel Hub", 
+      "keywords": ["engagement", "mentions", "brand monitoring"], 
+      "repo_path": "agent-tools/skills/social-intel-hub", 
+      "description": "Find and score engagement opportunities across the web"
+    },
+    {
+      "name": "Agent Ops Platform", 
+      "keywords": ["agent orchestration", "multi-agent", "agent state"], 
+      "repo_path": "research/agent-ops-platform", 
+      "description": "Supabase-backed agent coordination platform"
+    }
+  ]
+}
