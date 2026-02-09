@@ -26,16 +26,16 @@ export default {
   solidity: (params) => `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
-import {Hooks} from "v4-core/src/libraries/Hooks.sol";
-import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
-import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
-import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
-import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
-import {Actions} from "v4-periphery/src/libraries/Actions.sol";
+import {BaseHook} from "@uniswap/v4-periphery/contracts/BaseHook.sol";
+import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
+import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
+import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/contracts/types/BeforeSwapDelta.sol";
+import {Currency, CurrencyLibrary} from "@uniswap/v4-core/contracts/types/Currency.sol";
+import {SafeCast} from "@uniswap/v4-core/contracts/libraries/SafeCast.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract FeeOnSwapHook is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -103,32 +103,43 @@ contract FeeOnSwapHook is BaseHook {
         uint256 fee = (amountIn * feeRate) / 10000;
         
         if (fee > 0) {
-            // Determine which currency to take fee from
+            // Determine which currency to take fee from (input currency)
             Currency feeCurrency = params.zeroForOne ? key.currency0 : key.currency1;
             
-            // Take fee from the pool to this contract
-            poolManager.close(feeCurrency);
-            poolManager.take(feeCurrency, address(this), fee);
-            
-            // Transfer fee to recipient using CLOSE_CURRENCY (universal safe action)
-            poolManager.close(feeCurrency);
-            poolManager.settle(feeCurrency);  // Settle our take
-            
-            // Transfer to recipient (external transfer, safe here)
-            feeCurrency.transfer(feeRecipient, fee);
-            
             emit FeeCharged(key.toId(), sender, feeCurrency, fee);
+            
+            // Return delta indicating we want to take fee from the input currency
+            // V4 Convention: positive delta = hook takes tokens, negative = hook gives tokens
+            int128 deltaAmount = fee.toInt256().toInt128();
+            BeforeSwapDelta hookDelta = BeforeSwapDeltaLibrary.toBeforeSwapDelta(
+                params.zeroForOne ? deltaAmount : int128(0),  // currency0 delta
+                params.zeroForOne ? int128(0) : deltaAmount   // currency1 delta
+            );
+
+            return (BaseHook.beforeSwap.selector, hookDelta, 0);
         }
 
-        // Return delta: we took 'fee' amount from input currency
-        // V4 Convention: positive delta = hook takes tokens, negative = hook gives tokens
-        int128 deltaAmount = fee.toInt256().toInt128();
-        BeforeSwapDelta hookDelta = BeforeSwapDeltaLibrary.toBeforeSwapDelta(
-            params.zeroForOne ? deltaAmount : int128(0),  // currency0 delta
-            params.zeroForOne ? int128(0) : deltaAmount   // currency1 delta
-        );
-
-        return (BaseHook.beforeSwap.selector, hookDelta, 0);
+        return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
+    }
+    
+    /// @notice Withdraw collected fees to recipient
+    /// @dev Must be called outside of any pool operation
+    function withdrawFees(Currency feeCurrency) external {
+        if (feeCurrency.isAddressZero()) {
+            // Handle native ETH
+            uint256 balance = address(this).balance;
+            if (balance > 0) {
+                (bool success,) = feeRecipient.call{value: balance}("");
+                require(success, "ETH transfer failed");
+            }
+        } else {
+            // Handle ERC20 tokens
+            IERC20 token = IERC20(Currency.unwrap(feeCurrency));
+            uint256 balance = token.balanceOf(address(this));
+            if (balance > 0) {
+                require(token.transfer(feeRecipient, balance), "Token transfer failed");
+            }
+        }
     }
 }`,
 

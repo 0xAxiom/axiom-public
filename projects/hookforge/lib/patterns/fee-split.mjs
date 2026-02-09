@@ -56,17 +56,18 @@ export default {
   solidity: (params) => `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
-import {Hooks} from "v4-core/src/libraries/Hooks.sol";
-import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
-import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
-import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
-import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
+import {BaseHook} from "@uniswap/v4-periphery/contracts/BaseHook.sol";
+import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
+import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
+import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/contracts/types/BeforeSwapDelta.sol";
+import {Currency, CurrencyLibrary} from "@uniswap/v4-core/contracts/types/Currency.sol";
+import {SafeCast} from "@uniswap/v4-core/contracts/libraries/SafeCast.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract FeeSplitHook is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -185,45 +186,37 @@ contract FeeSplitHook is BaseHook {
         if (totalFee > 0) {
             Currency feeCurrency = params.zeroForOne ? key.currency0 : key.currency1;
             
-            // Take total fee from pool
-            poolManager.close(feeCurrency);
-            poolManager.take(feeCurrency, address(this), totalFee);
+            // Track fees for later distribution
+            _trackFees(key.toId(), feeCurrency, totalFee, sender);
             
-            // Distribute fees
-            _distributeFees(key.toId(), feeCurrency, totalFee, sender);
+            // Return delta representing fee taken
+            int128 deltaAmount = totalFee.toInt256().toInt128();
+            BeforeSwapDelta hookDelta = BeforeSwapDeltaLibrary.toBeforeSwapDelta(
+                params.zeroForOne ? deltaAmount : int128(0),
+                params.zeroForOne ? int128(0) : deltaAmount
+            );
+
+            return (BaseHook.beforeSwap.selector, hookDelta, 0);
         }
 
-        // Return delta representing fee taken
-        int128 deltaAmount = totalFee.toInt256().toInt128();
-        BeforeSwapDelta hookDelta = BeforeSwapDeltaLibrary.toBeforeSwapDelta(
-            params.zeroForOne ? deltaAmount : int128(0),
-            params.zeroForOne ? int128(0) : deltaAmount
-        );
-
-        return (BaseHook.beforeSwap.selector, hookDelta, 0);
+        return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
     }
 
-    function _distributeFees(PoolId poolId, Currency currency, uint256 totalFee, address swapper) internal {
+    function _trackFees(PoolId poolId, Currency currency, uint256 totalFee, address swapper) internal {
         // Calculate individual fee amounts
         uint256 protocolFee = (totalFee * feeDistribution.protocolShare) / 10000;
         uint256 nftFee = (totalFee * feeDistribution.nftHolderShare) / 10000;
         uint256 creatorFee = (totalFee * feeDistribution.creatorShare) / 10000;
         
-        // Ensure all fees are distributed (handle rounding)
+        // Ensure all fees are tracked (handle rounding)
         uint256 distributed = protocolFee + nftFee + creatorFee;
         if (distributed < totalFee) {
             protocolFee += (totalFee - distributed); // Give remainder to protocol
         }
 
-        // Distribute protocol fee immediately
-        poolManager.close(currency);
-        poolManager.settle(currency);
-        currency.transfer(protocolRecipient, protocolFee);
-
-        // Distribute creator fee immediately  
-        currency.transfer(creatorRecipient, creatorFee);
-
-        // Accumulate NFT holder rewards for later claiming
+        // Track fees for later distribution (via delta settlement)
+        // Protocol and creator fees will be distributed via withdrawFees()
+        // Accumulate NFT holder rewards for claiming
         nftHolderRewards[currency] += nftFee;
         _updateNFTSupply(); // Update supply for reward calculations
 
@@ -263,8 +256,8 @@ contract FeeSplitHook is BaseHook {
         // Update claimed amount
         claimedRewards[holder][currency] = holderShare;
         
-        // Transfer rewards
-        currency.transfer(holder, claimableReward);
+        // Transfer rewards using proper Currency/ERC20 handling
+        _transferCurrency(currency, holder, claimableReward);
         
         emit NFTRewardsClaimed(holder, currency, claimableReward);
     }
@@ -311,6 +304,40 @@ contract FeeSplitHook is BaseHook {
 
     function getNFTSupplyInfo() external view returns (uint256 supply, uint256 lastUpdate) {
         return (lastKnownSupply, lastSupplyUpdate);
+    }
+    
+    /// @notice Withdraw accumulated fees (protocol and creator)
+    /// @dev Must be called outside of any pool operation
+    function withdrawFees(Currency currency) external {
+        require(
+            msg.sender == protocolRecipient || msg.sender == creatorRecipient,
+            "Only fee recipients can withdraw"
+        );
+        
+        uint256 balance = _getCurrencyBalance(currency);
+        if (balance > 0) {
+            _transferCurrency(currency, msg.sender, balance);
+        }
+    }
+    
+    function _getCurrencyBalance(Currency currency) internal view returns (uint256) {
+        if (currency.isAddressZero()) {
+            return address(this).balance;
+        } else {
+            return IERC20(Currency.unwrap(currency)).balanceOf(address(this));
+        }
+    }
+    
+    function _transferCurrency(Currency currency, address to, uint256 amount) internal {
+        if (currency.isAddressZero()) {
+            // Handle native ETH
+            (bool success,) = to.call{value: amount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            // Handle ERC20 tokens
+            IERC20 token = IERC20(Currency.unwrap(currency));
+            require(token.transfer(to, amount), "Token transfer failed");
+        }
     }
 }`,
 

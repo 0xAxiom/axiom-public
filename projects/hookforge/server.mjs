@@ -82,7 +82,11 @@ app.post('/api/generate/template', async (req, res) => {
       return res.status(400).json({ error: 'Missing patternId or params' });
     }
 
-    const result = await generateFromTemplate(patternId, params);
+    // Sanitize inputs
+    const sanitizedPatternId = sanitizePatternId(patternId);
+    const sanitizedParams = sanitizeParams(params);
+
+    const result = await generateFromTemplate(sanitizedPatternId, sanitizedParams);
     res.json({ 
       success: true,
       solidity: result.solidity,
@@ -103,7 +107,11 @@ app.post('/api/generate/compose', async (req, res) => {
       return res.status(400).json({ error: 'Missing or invalid patterns array' });
     }
 
-    const result = await composePatterns(patterns, params || {});
+    // Sanitize inputs
+    const sanitizedPatterns = patterns.map(sanitizePatternId);
+    const sanitizedParams = sanitizeParams(params || {});
+
+    const result = await composePatterns(sanitizedPatterns, sanitizedParams);
     res.json({ 
       success: true,
       solidity: result.solidity,
@@ -124,12 +132,15 @@ app.post('/api/generate/natural', async (req, res) => {
       return res.status(400).json({ error: 'Missing or invalid prompt' });
     }
 
+    // Sanitize prompt
+    const sanitizedPrompt = sanitizePrompt(prompt);
+
     // For now, return a structured response indicating this would use LLM
     // In production, this would call OpenAI/Anthropic with V4-specialized prompt
     res.json({ 
       success: true,
-      solidity: generateNLPlaceholder(prompt),
-      test: generateTestPlaceholder(prompt),
+      solidity: generateNLPlaceholder(sanitizedPrompt),
+      test: generateTestPlaceholder(sanitizedPrompt),
       warnings: ['Natural language generation requires LLM integration']
     });
   } catch (error) {
@@ -190,13 +201,13 @@ function generateNLPlaceholder(prompt) {
 
 pragma solidity ^0.8.26;
 
-import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
-import {Hooks} from "v4-core/src/libraries/Hooks.sol";
-import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
-import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
+import {BaseHook} from "@uniswap/v4-periphery/contracts/BaseHook.sol";
+import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
+import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/contracts/types/PoolId.sol";
+import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/contracts/types/BeforeSwapDelta.sol";
 
 contract GeneratedHook is BaseHook {
     using PoolIdLibrary for PoolKey;
@@ -254,6 +265,104 @@ contract GeneratedHookTest is Test {
         // Generated tests based on the prompt
     }
 }`;
+}
+
+// Input sanitization functions
+function sanitizePatternId(patternId) {
+  if (typeof patternId !== 'string') {
+    throw new Error('Pattern ID must be a string');
+  }
+  
+  // Only allow alphanumeric characters, dashes, and underscores
+  const sanitized = patternId.replace(/[^a-zA-Z0-9\-_]/g, '');
+  
+  if (sanitized.length === 0 || sanitized.length > 50) {
+    throw new Error('Invalid pattern ID format');
+  }
+  
+  return sanitized;
+}
+
+function sanitizeParams(params) {
+  if (typeof params !== 'object' || params === null) {
+    return {};
+  }
+  
+  const sanitized = {};
+  
+  for (const [key, value] of Object.entries(params)) {
+    // Sanitize parameter keys
+    const sanitizedKey = sanitizeParamKey(key);
+    
+    // Sanitize parameter values based on type
+    sanitized[sanitizedKey] = sanitizeParamValue(value);
+  }
+  
+  return sanitized;
+}
+
+function sanitizeParamKey(key) {
+  if (typeof key !== 'string') {
+    throw new Error('Parameter key must be a string');
+  }
+  
+  // Only allow alphanumeric characters and underscores for parameter keys
+  const sanitized = key.replace(/[^a-zA-Z0-9_]/g, '');
+  
+  if (sanitized.length === 0 || sanitized.length > 30) {
+    throw new Error('Invalid parameter key format');
+  }
+  
+  return sanitized;
+}
+
+function sanitizeParamValue(value) {
+  if (typeof value === 'string') {
+    // Remove potentially dangerous characters but preserve valid Solidity literals
+    // Allow alphanumeric, spaces, dots, parentheses, and some symbols for addresses/numbers
+    const sanitized = value.replace(/[<>'"`;\\]/g, '');
+    
+    if (sanitized.length > 200) {
+      throw new Error('Parameter value too long');
+    }
+    
+    return sanitized;
+  }
+  
+  if (typeof value === 'number') {
+    // Validate numeric parameters
+    if (!Number.isFinite(value) || value < 0 || value > 1e18) {
+      throw new Error('Invalid numeric parameter');
+    }
+    return value;
+  }
+  
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  if (Array.isArray(value)) {
+    // Sanitize array elements
+    return value.map(sanitizeParamValue);
+  }
+  
+  // Reject other types
+  throw new Error('Unsupported parameter type');
+}
+
+function sanitizePrompt(prompt) {
+  if (typeof prompt !== 'string') {
+    throw new Error('Prompt must be a string');
+  }
+  
+  // Remove potentially dangerous HTML/script tags and limit length
+  const sanitized = prompt.replace(/<[^>]*>/g, '').substring(0, 1000);
+  
+  if (sanitized.trim().length === 0) {
+    throw new Error('Prompt cannot be empty');
+  }
+  
+  return sanitized;
 }
 
 // Start server
