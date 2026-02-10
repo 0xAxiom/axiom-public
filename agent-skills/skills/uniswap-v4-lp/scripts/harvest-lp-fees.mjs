@@ -26,7 +26,7 @@ const argv = minimist(process.argv.slice(2), {
   string: ['token-id', 'treasury'],
   boolean: ['dry-run'],
   default: {
-    'treasury': '0x19fe674a83e98c44ad4c2172e006c542b8e8fe08',
+    'treasury': '0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5',
     'dry-run': false,
   },
 });
