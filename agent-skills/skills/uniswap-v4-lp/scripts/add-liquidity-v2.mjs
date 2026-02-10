@@ -136,7 +136,7 @@ async function main() {
   console.log(`sqrtPriceX96: ${sqrtPriceX96}`);
 
   // Calculate tick range
-  const tickRange = Math.floor((argv.range / 100) * 46054);
+  const tickRange = Math.round(Math.log(1 + argv.range / 100) / Math.log(1.0001));
   const tickLower = Math.floor((currentTick - tickRange) / AXIOM_POOL.tickSpacing) * AXIOM_POOL.tickSpacing;
   const tickUpper = Math.ceil((currentTick + tickRange) / AXIOM_POOL.tickSpacing) * AXIOM_POOL.tickSpacing;
 

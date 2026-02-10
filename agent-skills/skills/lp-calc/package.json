@@ -1,0 +1,24 @@
+{
+  "name": "lp-calc",
+  "version": "1.0.0",
+  "description": "LP Position Calculator & Validator for Uniswap V4 pools",
+  "type": "module",
+  "scripts": {
+    "calc": "node scripts/lp-calc.mjs",
+    "test": "node scripts/lp-calc.mjs --current-tick 196423 --tick-spacing 200 --range 15 --test --verbose"
+  },
+  "dependencies": {
+    "viem": "^2.0.0",
+    "yargs": "^17.0.0"
+  },
+  "keywords": [
+    "uniswap",
+    "v4",
+    "liquidity",
+    "defi",
+    "calculator",
+    "ticks"
+  ],
+  "author": "Axiom",
+  "license": "MIT"
+}
