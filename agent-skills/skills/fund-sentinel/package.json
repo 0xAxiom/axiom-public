@@ -1,0 +1,17 @@
+{
+  "name": "fund-sentinel",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Multi-chain wallet balance monitoring with threshold alerts",
+  "main": "sentinel.mjs",
+  "scripts": {
+    "start": "node sentinel.mjs",
+    "test": "node sentinel.mjs --dry-run"
+  },
+  "dependencies": {
+    "viem": "^2.0.0"
+  },
+  "keywords": ["crypto", "wallet", "monitoring", "defi", "ethereum", "base"],
+  "author": "Axiom",
+  "license": "MIT"
+}

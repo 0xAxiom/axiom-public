@@ -1,0 +1,43 @@
+{
+  "wallets": {
+    "treasury": "0x19fe674a83e98c44ad4c2172e006c542b8e8fe08",
+    "main": "0x523Eff3dB03938eaa31a5a6FBd41E3B9d23edde5"
+  },
+  "chains": {
+    "base": {
+      "rpcUrl": "https://mainnet.base.org",
+      "chainId": 8453
+    },
+    "ethereum": {
+      "rpcUrl": "https://eth.llamarpc.com",
+      "chainId": 1
+    }
+  },
+  "tokens": {
+    "USDC_BASE": {
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "decimals": 6,
+      "chain": "base"
+    },
+    "WETH_BASE": {
+      "address": "0x4200000000000000000000000000000000000006",
+      "decimals": 18,
+      "chain": "base"
+    },
+    "USDC_ETH": {
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "decimals": 6,
+      "chain": "ethereum"
+    },
+    "WETH_ETH": {
+      "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "decimals": 18,
+      "chain": "ethereum"
+    }
+  },
+  "thresholds": {
+    "balanceDropPercent": 20,
+    "minAlertValueUsd": 100
+  },
+  "snapshotFile": "./snapshots.json"
+}
