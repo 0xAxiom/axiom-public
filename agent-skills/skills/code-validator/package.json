@@ -1,0 +1,47 @@
+{
+  "name": "@axiom-public/code-validator",
+  "version": "1.0.0",
+  "description": "Multi-stage validation pipeline for LLM-generated code",
+  "main": "validate.mjs",
+  "type": "module",
+  "bin": {
+    "validate-code": "./validate.mjs"
+  },
+  "scripts": {
+    "test": "node test.mjs",
+    "validate": "./validate.mjs",
+    "example:solidity": "ollama run qwq:latest 'Write a Solidity Strategy contract' > /tmp/qwq_test.txt && node validate.mjs --input /tmp/qwq_test.txt --lang solidity --output /tmp/validated.sol --retry --verbose",
+    "example:js": "echo 'function test() { return \"hello world\"; }' | node validate.mjs --input /dev/stdin --lang javascript --verbose"
+  },
+  "keywords": [
+    "llm",
+    "code-generation", 
+    "validation",
+    "solidity",
+    "compiler",
+    "qwq",
+    "ollama",
+    "defi",
+    "security"
+  ],
+  "author": "Axiom",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xAxiom/axiom-public.git",
+    "directory": "agent-skills/skills/code-validator"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "peerDependencies": {
+    "solc": "^0.8.0"
+  },
+  "peerDependenciesMeta": {
+    "solc": {
+      "optional": true
+    }
+  }
+}
