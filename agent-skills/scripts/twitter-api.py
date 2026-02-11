@@ -21,11 +21,12 @@ Usage:
 
 import sys, time, hashlib, hmac, urllib.parse, secrets, base64, http.client, json
 
-# Credentials
-AK = "qx7UevJ9Ik8VcGTU9wHlgynna"
-AKS = "Sr6poxYJESoYctndEufjjtjXgXUGz1urinA8K8ADw0yLtcoDt6"
-AT = "2013700835654672388-HUnMlIBkv1KiSKSSjFU3m68gffRHl1"
-ATS = "pYBAUzVjP4wWesaymDq4EQ3ddlcHqq7LRGoXTeZHJOJVP"
+# Credentials — loaded from ~/.axiom/wallet.env (NEVER hardcode)
+import os
+AK = os.environ.get("TWITTER_CONSUMER_KEY", "")
+AKS = os.environ.get("TWITTER_CONSUMER_SECRET", "")
+AT = os.environ.get("TWITTER_ACCESS_TOKEN", "")
+ATS = os.environ.get("TWITTER_ACCESS_TOKEN_SECRET", "")
 
 def oauth_sign(method, url, extra_params=None):
     ts = str(int(time.time()))
