@@ -1,95 +1,95 @@
 ---
 name: bankr-airdrop
-description: Bankr leaderboard rankings, user profiles, wallet export, and score breakdowns
-version: 1.0.0
-author: Axiom
-tags: [bankr, leaderboard, wallets, airdrop, crypto, defi]
+description: Daily pro rata AXIOM airdrop to Bankr Club NFT holders on Base. Use when claiming Clanker fees, snapshotting NFT holders, or distributing tokens proportionally by NFT holdings. Triggers on "airdrop", "bankr club", "holder snapshot", "pro rata distribution", "claim and distribute".
 ---
 
-# Bankr Airdrop Skill
+# Bankr Club Pro Rata Airdrop
 
-Query the Bankr leaderboard, look up user profiles and wallets, and export wallet lists for airdrops or analysis.
+Daily pipeline: snapshot NFT holders with balances, claim Clanker fees, distribute AXIOM proportionally by NFT holdings. Holders with more NFTs get proportionally more.
 
-## Usage
+## Overview
 
-### Fetch Rankings
+| Component | Details |
+|-----------|---------|
+| NFT Contract | `0x9fab8c51f911f0ba6dab64fd6e979bcf6424ce82` (Bankr Club, Base) |
+| Token | AXIOM `0xf3ce5ddaab6c133f9875a4a46c55cf0b58111b07` |
+| Disperse | `0xD152f549545093347A162Dce210e7293f1452150` |
+| Treasury | Agent's hardware wallet (for WETH/USDC portion) |
+| Chain | Base (8453) |
 
-```bash
-# Top 100 overall
-node scripts/bankr-airdrop.mjs --action rankings --count 100
+## Schedule
 
-# Top 20 by PnL in last 24h
-node scripts/bankr-airdrop.mjs --action rankings --count 20 --timeframe 24h --type pnl
+Run two crons back to back. Snapshot must complete before airdrop starts.
 
-# CSV output
-node scripts/bankr-airdrop.mjs --action rankings --count 50 --output csv
+| Cron | Time | Purpose |
+|------|------|---------|
+| Holder snapshot | 5:58 PM PT daily | Scrape holders + NFT balances |
+| Claim + airdrop | 6:00 PM PT daily | Claim fees, swap WETH, pro rata distribute AXIOM |
 
-# Save to file
-node scripts/bankr-airdrop.mjs --action rankings --count 50 --output csv --out-file ./rankings.csv
-```
-
-### Look Up User Profile
-
-```bash
-# By account ID
-node scripts/bankr-airdrop.mjs --action profile --user 1204220275543433217
-
-# By @username (searches rankings)
-node scripts/bankr-airdrop.mjs --action profile --user @thatdudeboz
-```
-
-Returns: `walletAddress`, `username`, `socials`, `rank`, `totalScore`
-
-### Export Wallet Addresses
+## Step 1: Holder Snapshot (5:58 PM)
 
 ```bash
-# Export top 200 wallets as CSV
-node scripts/bankr-airdrop.mjs --action wallets --count 200 --output csv --out-file ./wallets.csv
-
-# Convenience wrapper
-node scripts/export-wallets.mjs --count 200 --out ./bankr-top200.csv
-
-# JSON format
-node scripts/export-wallets.mjs --count 100 --format json --out ./wallets.json
-
-# Filter by type
-node scripts/export-wallets.mjs --count 50 --type pnl --timeframe 7d --out ./top-pnl-7d.csv
+python3 scripts/snapshot-bankr-holders.py
 ```
 
-CSV columns: `rank,username,wallet_address,account_id`
+Scrapes Basescan holder table. Extracts each holder's address AND NFT quantity.
 
-### Score Breakdown
+**Output:** `bankr-club-holders.json`
+```json
+{
+  "date": "2026-02-12",
+  "holders": {"0xaddr1": 5, "0xaddr2": 1, "0xaddr3": 27},
+  "totalNfts": 999,
+  "totalHolders": 734
+}
+```
+
+Also writes flat `bankr-club-holders.txt` and dated snapshot to `bankr-holders-snapshots/`.
+
+Excludes: zero address, dead address.
+
+## Step 2: Claim Clanker Fees
+
+Claim WETH + AXIOM fees from the Clanker vault for the token.
+
+## Step 3: Swap WETH to Treasury
+
+Swap WETH to USDC via Uniswap SwapRouter02 (fee tier 500). Send to treasury.
+
+**Slippage protection required:** Calculate `min_output = amount * eth_price * 0.98`. Never use 0.
+
+## Step 4: Pro Rata Distribution
+
+Read the snapshot JSON. Calculate each holder's share:
+
+```
+per_nft_amount = total_axiom / totalNfts
+holder_amount  = holder_nft_count * per_nft_amount
+```
+
+- 1 NFT holder gets `1 * per_nft_amount`
+- 5 NFT holder gets `5 * per_nft_amount`
+- 27 NFT holder gets `27 * per_nft_amount`
+
+**Floor all amounts** to avoid dust overflow. Remainder stays in wallet.
+
+Distribute via `disperseToken()` on the Disperse contract. Approve first. Batch 150 addresses per TX.
+
+## Leaderboard Tools
+
+Query Bankr leaderboard rankings and export wallets. See `scripts/bankr-leaderboard.mjs`:
 
 ```bash
-node scripts/bankr-airdrop.mjs --action scores --user 1204220275543433217 --timeframe 24h
+# Top 100 rankings
+node scripts/bankr-leaderboard.mjs --action rankings --count 100
+
+# Export wallets for airdrop targeting
+node scripts/export-wallets.mjs --count 200 --out ./wallets.csv
 ```
 
-### Tree Map (Top Traders)
+## Safety
 
-```bash
-node scripts/bankr-airdrop.mjs --action treemap --timeframe 24h --count 10
-```
-
-## Options
-
-| Option | Values | Default | Description |
-|--------|--------|---------|-------------|
-| `--action` | rankings, profile, wallets, scores, treemap | — | Required action |
-| `--count` | 1-1000+ | 100 | Number of users to fetch |
-| `--timeframe` | 24h, 7d, 30d, total | total | Time period filter |
-| `--type` | total, staking, bnkr, earn, pnl, referral, nft, booster | total | Ranking category |
-| `--output` | json, csv | json | Output format |
-| `--out-file` | path | — | Save to file |
-| `--user` | accountId or @username | — | User identifier |
-
-## Pagination
-
-The Bankr API uses **cursor-based pagination** (not offset). Each page returns up to 20 results. The cursor increments by 20 for each page. The scripts handle this automatically.
-
-## Rate Limiting
-
-Profile fetches are rate-limited to 80ms between requests to avoid overwhelming the API. Fetching 200 wallets takes ~16 seconds.
-
-## Dependencies
-
-None beyond Node.js 18+ (uses native `fetch`).
+- NEVER send tokens to addresses not in the snapshot
+- NEVER use 0 for swap slippage
+- If snapshot is stale (>24h), re-run before distributing
+- If AXIOM balance is 0 after claim, skip airdrop
