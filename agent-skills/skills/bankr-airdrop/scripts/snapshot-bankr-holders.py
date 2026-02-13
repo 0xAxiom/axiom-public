@@ -6,7 +6,7 @@ Also writes bankr-club-holders.txt (flat list, backward compat).
 import urllib.request, re, json, time, os
 from datetime import datetime
 
-CONTRACT = "0x9fab8c51f911f0ba6dab64fd6e979bcf6424ce82"
+CONTRACT = os.environ.get("NFT_CONTRACT", "0x9fab8c51f911f0ba6dab64fd6e979bcf6424ce82")
 DATA_DIR = os.path.expanduser("~/clawd/data")
 SNAPSHOT_DIR = os.path.join(DATA_DIR, "bankr-holders-snapshots")
 os.makedirs(SNAPSHOT_DIR, exist_ok=True)
