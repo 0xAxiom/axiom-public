@@ -14,7 +14,7 @@ const { generateSampleData } = require('./sampleData');
 const app = express();
 const server = http.createServer(app);
 const db = new AgentPulseDB();
-const txProcessor = new TransactionProcessor(process.env.ETHERSCAN_API_KEY || '47JMQ2USAJHMGF6URVA2D85D7Q77XXDI9F');
+const txProcessor = new TransactionProcessor(process.env.ETHERSCAN_API_KEY || 'YOUR_ETHERSCAN_API_KEY');
 const wsServer = new WebSocketServer(server);
 
 // Middleware
