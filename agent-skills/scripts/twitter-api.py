@@ -177,12 +177,18 @@ def tweet_with_media(text, media_path, reply_to=None):
 
 def mentions(count=15):
     """Get recent mentions of @AxiomBot"""
-    params = {"max_results": min(count, 100), "tweet.fields": "created_at,author_id,conversation_id,in_reply_to_user_id,text", "expansions": "author_id", "user.fields": "username"}
+    # Validate count (API allows 5-100, we allow 1-5 for user flexibility, pad to 5 if needed)
+    if count < 1:
+        print("❌ Error: count must be at least 1")
+        return
+    api_count = max(min(count, 100), 5)  # API minimum is 5
+    params = {"max_results": api_count, "tweet.fields": "created_at,author_id,conversation_id,in_reply_to_user_id,text", "expansions": "author_id", "user.fields": "username"}
     qs = urllib.parse.urlencode(params)
     status, data = api_call("GET", f"/2/users/2013700835654672388/mentions?{qs}")
     if "data" in data:
         users = {u["id"]: u["username"] for u in data.get("includes", {}).get("users", [])}
-        for t in data["data"]:
+        # Slice to user's requested count
+        for t in data["data"][:count]:
             author = users.get(t.get("author_id"), t.get("author_id", "?"))
             print(f"@{author} [{t['id']}] {t.get('created_at', '')}")
             print(f"  {t['text']}")
@@ -193,12 +199,18 @@ def mentions(count=15):
 
 def timeline(count=20):
     """Get reverse-chronological home timeline"""
-    params = {"max_results": min(count, 100), "tweet.fields": "created_at,author_id,text", "expansions": "author_id", "user.fields": "username"}
+    # Validate count (API allows 5-100, we allow 1-5 for user flexibility, pad to 5 if needed)
+    if count < 1:
+        print("❌ Error: count must be at least 1")
+        return
+    api_count = max(min(count, 100), 5)  # API minimum is 5
+    params = {"max_results": api_count, "tweet.fields": "created_at,author_id,text", "expansions": "author_id", "user.fields": "username"}
     qs = urllib.parse.urlencode(params)
     status, data = api_call("GET", f"/2/users/2013700835654672388/timelines/reverse_chronological?{qs}")
     if "data" in data:
         users = {u["id"]: u["username"] for u in data.get("includes", {}).get("users", [])}
-        for t in data["data"]:
+        # Slice to user's requested count
+        for t in data["data"][:count]:
             author = users.get(t.get("author_id"), t.get("author_id", "?"))
             print(f"@{author} [{t['id']}] {t.get('created_at', '')}")
             print(f"  {t['text'][:200]}")
@@ -209,12 +221,18 @@ def timeline(count=20):
 
 def search(query, count=10):
     """Search recent tweets"""
-    params = {"query": query, "max_results": max(min(count, 100), 10), "tweet.fields": "created_at,author_id,text", "expansions": "author_id", "user.fields": "username"}
+    # Validate count (API allows 10-100, we allow 1-5 for user flexibility, pad to 10 if needed)
+    if count < 1:
+        print("❌ Error: count must be at least 1")
+        return
+    api_count = max(min(count, 100), 10)  # API minimum is 10 for search
+    params = {"query": query, "max_results": api_count, "tweet.fields": "created_at,author_id,text", "expansions": "author_id", "user.fields": "username"}
     qs = urllib.parse.urlencode(params)
     status, data = api_call("GET", f"/2/tweets/search/recent?{qs}")
     if "data" in data:
         users = {u["id"]: u["username"] for u in data.get("includes", {}).get("users", [])}
-        for t in data["data"]:
+        # Slice to user's requested count
+        for t in data["data"][:count]:
             author = users.get(t.get("author_id"), t.get("author_id", "?"))
             print(f"@{author} [{t['id']}] {t.get('created_at', '')}")
             print(f"  {t['text'][:200]}")
@@ -240,11 +258,17 @@ def get_tweet(tweet_id):
 
 def my_tweets(count=10):
     """Get our own recent tweets"""
-    params = {"max_results": min(count, 100), "tweet.fields": "created_at,text,public_metrics"}
+    # Validate count (API allows 5-100, we allow 1-5 for user flexibility, pad to 5 if needed)
+    if count < 1:
+        print("❌ Error: count must be at least 1")
+        return
+    api_count = max(min(count, 100), 5)  # API minimum is 5
+    params = {"max_results": api_count, "tweet.fields": "created_at,text,public_metrics"}
     qs = urllib.parse.urlencode(params)
     status, data = api_call("GET", f"/2/users/2013700835654672388/tweets?{qs}")
     if "data" in data:
-        for t in data["data"]:
+        # Slice to user's requested count
+        for t in data["data"][:count]:
             m = t.get("public_metrics", {})
             print(f"[{t['id']}] {t.get('created_at', '')}")
             print(f"  {t['text'][:200]}")

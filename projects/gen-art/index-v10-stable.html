@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom Gen — Flow Fields</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0a0a;color:#e0e0e0;font-family:'JetBrains Mono','SF Mono',monospace;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:2rem}
+  h1{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:#555;margin-bottom:1.5rem}
+  canvas{display:block;border:1px solid #1a1a1a}
+  .controls{display:flex;gap:1rem;margin-top:1.5rem;align-items:center}
+  button{background:#141414;border:1px solid #2a2a2a;color:#888;padding:.5rem 1.2rem;font-family:inherit;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer}
+  button:hover{border-color:#444;color:#ccc}
+  .meta{font-size:.6rem;color:#333;letter-spacing:.08em;margin-top:.75rem}
+  .meta span{margin-right:1.2rem}
+</style>
+</head>
+<body>
+<h1>Axiom Gen — Flow Fields</h1>
+<canvas id="c" width="800" height="800"></canvas>
+<div class="controls">
+  <button onclick="generate()">Generate</button>
+  <button onclick="save()">Save PNG</button>
+  <span class="meta" id="info"></span>
+</div>
+
+<script>
+function rng32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let R,seed;
+
+class Noise{
+  constructor(r){
+    this.g=[[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
+    this.p=new Uint8Array(512);const p=new Uint8Array(256);
+    for(let i=0;i<256;i++)p[i]=i;
+    for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[p[i],p[j]]=[p[j],p[i]]}
+    for(let i=0;i<512;i++)this.p[i]=p[i&255]
+  }
+  n2(x,y){
+    const F=.366025,G=.211325,s=(x+y)*F,i=Math.floor(x+s),j=Math.floor(y+s),t=(i+j)*G;
+    const x0=x-(i-t),y0=y-(j-t);let i1,j1;if(x0>y0){i1=1;j1=0}else{i1=0;j1=1}
+    const x1=x0-i1+G,y1=y0-j1+G,x2=x0-1+2*G,y2=y0-1+2*G,ii=i&255,jj=j&255;
+    const d=(g,x,y)=>g[0]*x+g[1]*y;let n0=0,n1=0,n2=0,t0=.5-x0*x0-y0*y0;
+    if(t0>0){t0*=t0;n0=t0*t0*d(this.g[this.p[ii+this.p[jj]]%12],x0,y0)}
+    let t1=.5-x1*x1-y1*y1;if(t1>0){t1*=t1;n1=t1*t1*d(this.g[this.p[ii+i1+this.p[jj+j1]]%12],x1,y1)}
+    let t2=.5-x2*x2-y2*y2;if(t2>0){t2*=t2;n2=t2*t2*d(this.g[this.p[ii+1+this.p[jj+1]]%12],x2,y2)}
+    return 70*(n0+n1+n2)
+  }
+}
+
+function fbm(n,x,y,o){let v=0,a=1,f=1,m=0;for(let i=0;i<o;i++){v+=n.n2(x*f,y*f)*a;m+=a;a*=.5;f*=2}return v/m}
+
+const PAL=[
+  {n:'Sediment',c:['#C4A882','#8B7355','#D4C5B2','#A0937D','#E8DCC8'],a:'#E8C88A'},
+  {n:'Mineral',c:['#5B9AAD','#7BBCCC','#A0D4E0','#3D7A8C','#C8E8F0'],a:'#7BBCCC'},
+  {n:'Oxide',c:['#C47035','#A0522D','#E0965A','#D2B48C','#8B4513'],a:'#E0965A'},
+  {n:'Graphite',c:['#999','#bbb','#ddd','#777','#eee'],a:'#ddd'},
+  {n:'Ember',c:['#CC5555','#AA3333','#E08080','#DDAAAA','#882222'],a:'#CC5555'},
+  {n:'Abyss',c:['#3377BB','#5599DD','#77BBFF','#2266AA','#99DDFF'],a:'#77BBFF'},
+  {n:'Patina',c:['#66BB88','#88DDAA','#AAFFCC','#44AA66','#CCFFEE'],a:'#88DDAA'},
+  {n:'Dusk',c:['#8866AA','#AA88CC','#CC99EE','#6644AA','#DDBBFF'],a:'#AA88CC'},
+  {n:'Bone',c:['#E8E0D0','#D0C8B8','#C0B8A0','#B0A888','#F0E8D8'],a:'#E8E0D0'},
+  {n:'Rust',c:['#B85C38','#E07050','#CC8866','#994422','#FFB090'],a:'#E07050'},
+];
+
+function traits(){
+  const pal=PAL[Math.floor(R()*PAL.length)];
+  const freq = 0.0003 + R()*0.0008; // 0.0003-0.0011 (even lower = more laminar)
+  const oct = 2; // always 2 octaves — fewer = smoother/more coherent
+  const count = 5000 + Math.floor(R()*3000); // 5000-8000
+  const steps = 600 + Math.floor(R()*600); // 600-1200
+  const weight = 0.15 + R()*0.4; // 0.15-0.55 (thinner = more parallel lines visible)
+  const warpStr = 0.3 + R()*1.5; // lower warp = less chaos
+  
+  // Always 2-3 attractors
+  const att=[];
+  const na = 2+Math.floor(R()*2);
+  for(let i=0;i<na;i++){
+    att.push({
+      x:.15+R()*.7, y:.15+R()*.7,
+      str:.4+R()*1.5,
+      type:R()<0.45?'vortex':'attract'
+    });
+  }
+  
+  const margin = 45+R()*25;
+  return {pal,freq,oct,count,steps,weight,warpStr,att,margin};
+}
+
+function buildField(w,h,t,N){
+  const pad=.5,left=-w*pad,top=-h*pad,res=2; // res=2 for finer grid
+  const cols=Math.ceil(w*(1+2*pad)/res),rows=Math.ceil(h*(1+2*pad)/res);
+  const f=new Float32Array(cols*rows);
+  for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+    const wx=left+c*res,wy=top+r*res;
+    let sx=wx*t.freq,sy=wy*t.freq;
+    sx+=fbm(N,wx*0.0006+100,wy*0.0006+100,3)*t.warpStr;
+    sy+=fbm(N,wx*0.0006+300,wy*0.0006+300,3)*t.warpStr;
+    let angle=fbm(N,sx,sy,t.oct)*Math.PI*2;
+    for(const a of t.att){
+      const dx=wx-a.x*w,dy=wy-a.y*h;
+      const dist=Math.sqrt(dx*dx+dy*dy)+1;
+      const inf=a.str/(1+dist*0.0015);
+      let ta,diff;
+      if(a.type==='vortex'){
+        ta=Math.atan2(dy,dx)+Math.PI/2;
+      }else{
+        ta=Math.atan2(-dy,-dx);
+      }
+      diff=ta-angle;
+      while(diff>Math.PI)diff-=Math.PI*2;
+      while(diff<-Math.PI)diff+=Math.PI*2;
+      angle+=diff*inf*(a.type==='vortex'?0.25:0.12);
+    }
+    f[c*rows+r]=angle;
+  }
+  return {f,cols,rows,res,left,top};
+}
+
+// Bilinear interpolation for smooth angle lookup
+function sampleField(ff,x,y){
+  const fx=(x-ff.left)/ff.res, fy=(y-ff.top)/ff.res;
+  const c0=Math.floor(fx), r0=Math.floor(fy);
+  const c1=Math.min(c0+1,ff.cols-1), r1=Math.min(r0+1,ff.rows-1);
+  if(c0<0||c0>=ff.cols||r0<0||r0>=ff.rows) return null;
+  const tx=fx-c0, ty=fy-r0;
+  // Get 4 corner angles
+  const a00=ff.f[c0*ff.rows+r0], a10=ff.f[c1*ff.rows+r0];
+  const a01=ff.f[c0*ff.rows+r1], a11=ff.f[c1*ff.rows+r1];
+  // Interpolate using sin/cos to handle angle wrapping
+  const sx=Math.cos(a00)*(1-tx)*(1-ty)+Math.cos(a10)*tx*(1-ty)+Math.cos(a01)*(1-tx)*ty+Math.cos(a11)*tx*ty;
+  const sy=Math.sin(a00)*(1-tx)*(1-ty)+Math.sin(a10)*tx*(1-ty)+Math.sin(a01)*(1-tx)*ty+Math.sin(a11)*tx*ty;
+  return Math.atan2(sy,sx);
+}
+
+function traceDir(sx,sy,ff,maxS,sl,w,h,dir){
+  const pts=[];let x=sx,y=sy;
+  for(let i=0;i<maxS;i++){
+    const a=sampleField(ff,x,y);
+    if(a===null)break;
+    x+=Math.cos(a)*sl*dir;y+=Math.sin(a)*sl*dir;
+    if(x<-150||x>w+150||y<-150||y>h+150)break;
+    pts.push([x,y]);
+  }
+  return pts;
+}
+
+function trace(sx,sy,ff,maxS,sl,w,h){
+  // Bidirectional: trace forward and backward from start
+  const fwd=traceDir(sx,sy,ff,maxS,sl,w,h,1);
+  const bwd=traceDir(sx,sy,ff,Math.floor(maxS*0.5),sl,w,h,-1);
+  // Combine: reversed backward + start + forward
+  const pts=bwd.reverse();
+  pts.push([sx,sy]);
+  pts.push(...fwd);
+  return pts;
+}
+
+function poisson(w,h,md,r){
+  const cs=md/Math.SQRT2,cols=Math.ceil(w/cs),rows=Math.ceil(h/cs);
+  const g=new Int32Array(cols*rows).fill(-1),pts=[],act=[];
+  const add=(x,y)=>{pts.push([x,y]);act.push(pts.length-1);const ci=Math.floor(x/cs),ri=Math.floor(y/cs);if(ci>=0&&ci<cols&&ri>=0&&ri<rows)g[ci+ri*cols]=pts.length-1};
+  add(r()*w,r()*h);
+  while(act.length){
+    const ai=Math.floor(r()*act.length);const[px,py]=pts[act[ai]];let found=false;
+    for(let n=0;n<30;n++){
+      const a=r()*Math.PI*2,rd=md+r()*md;
+      const nx=px+Math.cos(a)*rd,ny=py+Math.sin(a)*rd;
+      if(nx<0||nx>=w||ny<0||ny>=h)continue;
+      const ci=Math.floor(nx/cs),ri=Math.floor(ny/cs);let ok=true;
+      for(let di=-2;di<=2&&ok;di++)for(let dj=-2;dj<=2&&ok;dj++){
+        const ni=ci+di,nj=ri+dj;if(ni<0||ni>=cols||nj<0||nj>=rows)continue;
+        const gi=g[ni+nj*cols];if(gi>=0){const dx=pts[gi][0]-nx,dy=pts[gi][1]-ny;if(dx*dx+dy*dy<md*md)ok=false}
+      }
+      if(ok){add(nx,ny);found=true;break}
+    }
+    if(!found)act.splice(ai,1);
+  }
+  return pts;
+}
+
+function rgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${a})`}
+
+function drawCurve(ctx,pts){
+  if(pts.length<3)return;
+  ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let j=1;j<pts.length-1;j++){
+    const mx=(pts[j][0]+pts[j+1][0])/2,my=(pts[j][1]+pts[j+1][1])/2;
+    ctx.quadraticCurveTo(pts[j][0],pts[j][1],mx,my);
+  }
+  const l=pts[pts.length-1];ctx.lineTo(l[0],l[1]);
+  ctx.stroke();
+}
+
+function render(ctx,w,h,t,N){
+  ctx.fillStyle='#0a0a0a';ctx.fillRect(0,0,w,h);
+  const ff=buildField(w,h,t,N);
+  const sl=w*0.0012; // step ~1px — smooth but not sub-pixel
+  const m=t.margin,dw=w-m*2,dh=h-m*2;
+  const md=Math.max(1.0,dw/Math.sqrt(t.count)*0.3);
+  let starts=poisson(dw,dh,md,R).map(([x,y])=>[x+m,y+m]);
+  for(let i=starts.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[starts[i],starts[j]]=[starts[j],starts[i]]}
+  
+  // Fill to minimum — use jittered grid for guaranteed coverage
+  if(starts.length<t.count){
+    const gridSize=Math.ceil(Math.sqrt(t.count-starts.length));
+    const cellW=dw/gridSize,cellH=dh/gridSize;
+    for(let gx=0;gx<gridSize;gx++)for(let gy=0;gy<gridSize;gy++){
+      if(starts.length>=t.count)break;
+      starts.push([m+cellW*(gx+R()),m+cellH*(gy+R())]);
+    }
+  }
+  starts=starts.slice(0,t.count);
+
+  const colors=t.pal.c;
+  ctx.lineCap='round';ctx.lineJoin='round';
+
+  // Layer 1: Deep atmosphere (thick, very faint — fills canvas evenly)
+  const bgN=Math.min(800,Math.floor(starts.length*0.12));
+  for(let i=0;i<bgN;i++){
+    const[sx,sy]=starts[Math.floor(R()*starts.length)];
+    const pts=trace(sx,sy,ff,Math.floor(t.steps*1.2),sl*2.5,w,h);
+    if(pts.length<20)continue;
+    ctx.strokeStyle=rgba(colors[Math.floor(R()*colors.length)],0.006+R()*0.014);
+    ctx.lineWidth=10+R()*18;
+    drawCurve(ctx,pts);
+  }
+
+  // Layer 2: Main body (dense, low alpha — the texture)
+  for(let i=0;i<starts.length;i++){
+    const pts=trace(starts[i][0],starts[i][1],ff,t.steps,sl,w,h);
+    if(pts.length<12)continue;
+    const c=colors[Math.floor(R()*colors.length)];
+    ctx.strokeStyle=rgba(c,0.05+R()*0.13);
+    ctx.lineWidth=t.weight*(0.06+R()*0.6);
+    drawCurve(ctx,pts);
+  }
+
+  // Layer 3: Mid-bright rivers (reveals the flow structure)
+  const midN=Math.min(1000,Math.floor(starts.length*0.12));
+  for(let i=0;i<midN;i++){
+    const[sx,sy]=starts[Math.floor(R()*starts.length)];
+    const pts=trace(sx,sy,ff,Math.floor(t.steps*0.7),sl,w,h);
+    if(pts.length<15)continue;
+    const c=colors[Math.floor(R()*colors.length)];
+    ctx.strokeStyle=rgba(c,0.12+R()*0.2);
+    ctx.lineWidth=t.weight*(0.12+R()*0.35);
+    drawCurve(ctx,pts);
+  }
+
+  // Layer 4: Bright accent threads (same step length — no sub-pixel dashing)
+  const accN=Math.min(200,Math.floor(starts.length*0.025));
+  for(let i=0;i<accN;i++){
+    const[sx,sy]=starts[Math.floor(R()*starts.length)];
+    const pts=trace(sx,sy,ff,Math.floor(t.steps*0.4),sl,w,h);
+    if(pts.length<15)continue;
+    ctx.strokeStyle=rgba(t.pal.a,0.25+R()*0.5);
+    ctx.lineWidth=0.3+R()*0.4;
+    drawCurve(ctx,pts);
+  }
+
+  // Vignette
+  const vg=ctx.createRadialGradient(w/2,h/2,w*.28,w/2,h/2,w*.73);
+  vg.addColorStop(0,'rgba(10,10,10,0)');vg.addColorStop(1,'rgba(10,10,10,0.3)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);
+}
+
+function generate(s){
+  seed=s||Math.floor(Math.random()*999999999);
+  R=rng32(seed);
+  const N=new Noise(R),t=traits();
+  render(document.getElementById('c').getContext('2d'),800,800,t,N);
+  document.getElementById('info').innerHTML=
+    `<span>seed: ${seed}</span><span>${t.pal.n}</span>`+
+    `<span>${t.att.length} focals</span>`;
+}
+function save(){const c=document.getElementById('c'),a=document.createElement('a');a.download=`axiom-${seed}.png`;a.href=c.toDataURL('image/png');a.click()}
+generate();
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();generate()}if(e.code==='KeyS'&&!e.metaKey&&!e.ctrlKey)save()});
+</script>
+</body>
+</html>
