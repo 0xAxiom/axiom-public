@@ -11,9 +11,9 @@ Built on [Base](https://base.org) using [Coinbase Developer Platform](https://do
 ```bash
 # 1. Set up credentials
 export CDP_API_KEY_ID="organizations/.../apiKeys/..."
-export CDP_API_KEY_SECRET="-----BEGIN EC PRIVATE KEY-----
+export CDP_API_KEY_SECRET="YOUR_CDP_EC_PRIVATE_KEY_HERE
 ...
------END EC PRIVATE KEY-----"
+"
 export CDP_WALLET_SECRET="your-secret"
 
 # 2. Test connection
