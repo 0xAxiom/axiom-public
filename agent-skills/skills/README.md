@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 20 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 31 skills and counting.
 
 ## Available Skills
 
@@ -26,6 +26,17 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 20 skills a
 | 💊 [wallet-health](./wallet-health/) | Monitor wallet health, balances, and anomalies | ✅ Tested |
 | 🔧 [x402-builder](./x402-builder/) | Build x402 payment-gated content and APIs | ✅ Tested |
 | 🔒 [x402-gate](./x402-gate/) | x402 content gate for OpenClaw agents | ✅ Tested |
+| 🗡️ [adversary-trainer](./adversary-trainer/) | Red-team your agent with adversarial prompt testing | ✅ Tested |
+| 🧭 [alignment](./alignment/) | Agent alignment checks and behavioral guardrails | ✅ Tested |
+| 📰 [article-publisher](./article-publisher/) | Publish articles to X with formatting and media | ✅ Tested |
+| 🔥 [clanker-burn](./clanker-burn/) | Burn Clanker tokens with verification | ✅ Tested |
+| 🔍 [code-validator](./code-validator/) | Validate code output before shipping | ✅ Tested |
+| ⏰ [cron-health](./cron-health/) | Monitor agent cron jobs for failures, drift, and stuck runs | ✅ New |
+| 🛡️ [fund-sentinel](./fund-sentinel/) | Treasury monitoring and anomaly detection | ✅ Tested |
+| 📐 [lp-calc](./lp-calc/) | LP position calculator for Uniswap V3/V4 | ✅ Tested |
+| 📨 [outreach-automator](./outreach-automator/) | Automated outreach and follow-up workflows | ✅ Tested |
+| 📥 [social-inbox](./social-inbox/) | Unified social inbox across platforms | ✅ Tested |
+| 💳 [stripe-x402](./stripe-x402/) | Stripe integration with x402 payment protocol | ✅ Tested |
 
 ## Quick Install
 
@@ -60,16 +71,22 @@ skill-name/
 - uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, wallet-health
 
 **Agent Infrastructure**
-- agent-ops, agent-security, agent-launch-monitor, agent-launchpad, context-injector
+- agent-ops, agent-security, agent-launch-monitor, agent-launchpad, context-injector, cron-health, code-validator
 
 **Identity & Messaging**
 - basename-register, net-protocol, tx-verify
 
+**Security & Safety**
+- adversary-trainer, alignment, fund-sentinel
+
 **Monetization**
-- x402-builder, x402-gate, pitch-submit
+- x402-builder, x402-gate, pitch-submit, stripe-x402
 
 **Social & Growth**
-- twitter-algorithm, clawfomo-bot, bankr-airdrop
+- twitter-algorithm, clawfomo-bot, bankr-airdrop, outreach-automator, social-inbox
+
+**Publishing**
+- article-pipeline, article-publisher, lp-calc
 
 ## Contributing
 

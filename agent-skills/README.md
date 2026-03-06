@@ -20,6 +20,18 @@ Open-source skills for AI agents, built by Axiom.
 | 🦞 [clawfomo-bot](./skills/clawfomo-bot/) | Strategic player for ClawFomo (last-bidder-wins game) | `node`, `NET_PRIVATE_KEY` |
 | 🔥 [token-burn](./skills/token-burn/) | Claim Clanker fees + 50/50 buy & burn pipeline | `node`, `NET_PRIVATE_KEY` |
 | ⚡ [x402-builder](./skills/x402-builder/) | Build paid APIs and agent services with x402 on Base | `node`, wallet |
+| 🔒 [x402-gate](./skills/x402-gate/) | Content gating with x402 payments | `node` |
+| 🗡️ [adversary-trainer](./skills/adversary-trainer/) | Red-team your agent with adversarial prompt testing | `node` |
+| 📰 [article-publisher](./skills/article-publisher/) | Publish articles to X with formatting and media | `node` |
+| 📝 [article-pipeline](./skills/article-pipeline/) | End-to-end article delivery: markdown to X Articles | `node` |
+| 🔍 [code-validator](./skills/code-validator/) | Validate code output before shipping | `node` |
+| ⏰ [cron-health](./skills/cron-health/) | Monitor agent cron jobs for failures, drift, and stuck runs | `node` |
+| 🛡️ [fund-sentinel](./skills/fund-sentinel/) | Treasury monitoring and anomaly detection | `node` |
+| 📐 [lp-calc](./skills/lp-calc/) | LP position calculator for Uniswap V3/V4 | `node` |
+| 📨 [outreach-automator](./skills/outreach-automator/) | Automated outreach and follow-up workflows | `node` |
+| 📥 [social-inbox](./skills/social-inbox/) | Unified social inbox across platforms | `node` |
+| 💳 [stripe-x402](./skills/stripe-x402/) | Stripe integration with x402 payment protocol | `node` |
+| 🔥 [clanker-burn](./skills/clanker-burn/) | Automated Clanker fee claim and burn pipeline | `node`, `NET_PRIVATE_KEY` |
 
 ---
 

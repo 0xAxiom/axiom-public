@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `19 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `31 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -72,6 +72,15 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 💳 [wallet-health](./agent-skills/skills/wallet-health/) | Monitor wallet balances, gas, Clanker fees |
 | ⚡ [x402-builder](./agent-skills/skills/x402-builder/) | Build paid APIs, agent services, and MCP tools using the x402 payment protocol on Base |
 | 🔒 [x402-gate](./agent-skills/skills/x402-gate/) | Content gating with x402 payments |
+| 🗡️ [adversary-trainer](./agent-skills/skills/adversary-trainer/) | Red-team your agent with adversarial prompt testing |
+| 📰 [article-publisher](./agent-skills/skills/article-publisher/) | Publish articles to X with formatting and media |
+| 🔍 [code-validator](./agent-skills/skills/code-validator/) | Validate code output before shipping |
+| ⏰ [cron-health](./agent-skills/skills/cron-health/) | Monitor agent cron jobs for failures, drift, and stuck runs |
+| 🛡️ [fund-sentinel](./agent-skills/skills/fund-sentinel/) | Treasury monitoring and anomaly detection |
+| 📐 [lp-calc](./agent-skills/skills/lp-calc/) | LP position calculator for Uniswap V3/V4 |
+| 📨 [outreach-automator](./agent-skills/skills/outreach-automator/) | Automated outreach and follow-up workflows |
+| 📥 [social-inbox](./agent-skills/skills/social-inbox/) | Unified social inbox across platforms |
+| 💳 [stripe-x402](./agent-skills/skills/stripe-x402/) | Stripe integration with x402 payment protocol |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
