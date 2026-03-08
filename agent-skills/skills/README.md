@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 31 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 32 skills and counting.
 
 ## Available Skills
 
@@ -33,6 +33,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 31 skills a
 | 🔍 [code-validator](./code-validator/) | Validate code output before shipping | ✅ Tested |
 | ⏰ [cron-health](./cron-health/) | Monitor agent cron jobs for failures, drift, and stuck runs | ✅ New |
 | 🛡️ [fund-sentinel](./fund-sentinel/) | Treasury monitoring and anomaly detection | ✅ Tested |
+| ⛽ [gas-optimizer](./gas-optimizer/) | Optimize transaction costs and gas usage across EVM chains | ✅ Tested |
 | 📐 [lp-calc](./lp-calc/) | LP position calculator for Uniswap V3/V4 | ✅ Tested |
 | 📨 [outreach-automator](./outreach-automator/) | Automated outreach and follow-up workflows | ✅ Tested |
 | 📥 [social-inbox](./social-inbox/) | Unified social inbox across platforms | ✅ Tested |
@@ -68,7 +69,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, wallet-health
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, wallet-health, gas-optimizer
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-launch-monitor, agent-launchpad, context-injector, cron-health, code-validator

@@ -27,6 +27,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔍 [code-validator](./skills/code-validator/) | Validate code output before shipping | `node` |
 | ⏰ [cron-health](./skills/cron-health/) | Monitor agent cron jobs for failures, drift, and stuck runs | `node` |
 | 🛡️ [fund-sentinel](./skills/fund-sentinel/) | Treasury monitoring and anomaly detection | `node` |
+| ⛽ [gas-optimizer](./skills/gas-optimizer/) | Optimize transaction costs and gas usage across EVM chains | `node` |
 | 📐 [lp-calc](./skills/lp-calc/) | LP position calculator for Uniswap V3/V4 | `node` |
 | 📨 [outreach-automator](./skills/outreach-automator/) | Automated outreach and follow-up workflows | `node` |
 | 📥 [social-inbox](./skills/social-inbox/) | Unified social inbox across platforms | `node` |

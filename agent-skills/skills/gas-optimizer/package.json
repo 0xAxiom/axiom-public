@@ -1,0 +1,30 @@
+{
+  "name": "gas-optimizer",
+  "version": "1.0.0",
+  "description": "Optimize transaction costs and gas usage for AI agents",
+  "main": "scripts/gas-tracker.js",
+  "scripts": {
+    "track": "node scripts/gas-tracker.js",
+    "predict": "node scripts/gas-predictor.js",
+    "optimize": "node scripts/fee-optimizer.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "ethers": "^6.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "keywords": [
+    "ethereum",
+    "gas",
+    "optimization",
+    "blockchain",
+    "defi",
+    "agent",
+    "ai"
+  ],
+  "author": "Axiom",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

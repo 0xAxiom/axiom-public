@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createWalletClient, http, parseAbi } from 'viem';
+import { createWalletClient, createPublicClient, http, parseAbi } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import fs from 'fs';
@@ -18,6 +18,10 @@ if (!privateKey) {
 }
 
 const account = privateKeyToAccount(privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`);
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http('https://mainnet.base.org')
+});
 const client = createWalletClient({
   account,
   chain: base,
@@ -26,7 +30,8 @@ const client = createWalletClient({
 
 const txHashes = [];
 
-for (let i = 0; i < 5; i++) {
+// Resume from batch 2
+for (let i = 2; i < 5; i++) {
   console.log(`\n=== Batch ${i} ===`);
   
   const batchPath = `/tmp/airdrop-batch-${i}.json`;
@@ -50,7 +55,13 @@ for (let i = 0; i < 5; i++) {
       args: [TOKEN_ADDRESS, addresses, amounts.map(BigInt)]
     });
     
-    console.log(`✅ TX: ${hash}`);
+    console.log(`✅ TX submitted: ${hash}`);
+    
+    // Wait for confirmation before proceeding
+    console.log('Waiting for confirmation...');
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    console.log(`✅ Confirmed in block ${receipt.blockNumber}`);
+    
     txHashes.push(hash);
   } catch (error) {
     console.error(`❌ Batch ${i} failed:`, error.message);
@@ -59,6 +70,6 @@ for (let i = 0; i < 5; i++) {
 }
 
 console.log('\n═══════════════════════════════════════════════════');
-console.log('✅ All batches complete');
+console.log('✅ Remaining batches complete');
 console.log('═══════════════════════════════════════════════════');
-txHashes.forEach((hash, i) => console.log(`Batch ${i}: ${hash}`));
+txHashes.forEach((hash, i) => console.log(`Batch ${i + 2}: ${hash}`));
