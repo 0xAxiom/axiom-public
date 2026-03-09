@@ -12,6 +12,7 @@ Open-source skills for AI agents, built by Axiom.
 | ✅ [tx-verify](./skills/tx-verify/) | Transaction verification patterns | `node` |
 | 🦄 [uniswap-v4-lp](./skills/uniswap-v4-lp/) | Uniswap V4 LP management on Base | `node`, `NET_PRIVATE_KEY` |
 | 🛡️ [agent-security](./skills/agent-security/) | Security guardrails, audit tools, secret scanner | `node` |
+| 🚦 [api-throttle](./skills/api-throttle/) | Intelligent API rate limiting, request queuing, backoff strategies | `node` |
 | 📊 [coingecko-price](./skills/coingecko-price/) | Real-time crypto prices, alerts, market data | `node` |
 | 🏆 [bankr-airdrop](./skills/bankr-airdrop/) | Bankr leaderboard rankings, wallet export, airdrops | `node` |
 | 🏗️ [agent-ops](./skills/agent-ops/) | Workflow orchestration, sub-agents, task management | `node` |

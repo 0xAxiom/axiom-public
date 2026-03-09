@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `32 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `33 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -54,6 +54,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📊 [agent-launch-monitor](./agent-skills/skills/agent-launch-monitor/) | Track post-launch metrics for tokens deployed via Agent Launchpad or any Base token |
 | 🏗️ [agent-ops](./agent-skills/skills/agent-ops/) | Workflow orchestration, sub-agents, task management |
 | 🛡️ [agent-security](./agent-skills/skills/agent-security/) | Security guardrails, audit tools, secret scanner |
+| 🚦 [api-throttle](./agent-skills/skills/api-throttle/) | Intelligent API rate limiting, request queuing, backoff strategies |
 | 🎯 [alignment](./agent-skills/skills/alignment/) | Clanker fee burn pipeline using Bankr API - no private keys needed |
 | 📝 [article-pipeline](./agent-skills/skills/article-pipeline/) | End-to-end article delivery: markdown draft to X Articles-ready package |
 | 🏆 [bankr-airdrop](./agent-skills/skills/bankr-airdrop/) | Query Bankr leaderboard rankings, user profiles, and export wallet lists for airdrops |
