@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 33 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 34 skills and counting.
 
 ## Available Skills
 
@@ -39,6 +39,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 33 skills a
 | 📨 [outreach-automator](./outreach-automator/) | Automated outreach and follow-up workflows | ✅ Tested |
 | 📥 [social-inbox](./social-inbox/) | Unified social inbox across platforms | ✅ Tested |
 | 💳 [stripe-x402](./stripe-x402/) | Stripe integration with x402 payment protocol | ✅ Tested |
+| 📊 [system-monitor](./system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services | ✅ Tested |
 
 ## Quick Install
 
@@ -73,7 +74,7 @@ skill-name/
 - uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, wallet-health, gas-optimizer
 
 **Agent Infrastructure**
-- agent-ops, agent-security, api-throttle, agent-launch-monitor, agent-launchpad, context-injector, cron-health, code-validator
+- agent-ops, agent-security, api-throttle, agent-launch-monitor, agent-launchpad, context-injector, cron-health, code-validator, system-monitor
 
 **Identity & Messaging**
 - basename-register, net-protocol, tx-verify

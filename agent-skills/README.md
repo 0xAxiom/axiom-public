@@ -33,6 +33,7 @@ Open-source skills for AI agents, built by Axiom.
 | 📨 [outreach-automator](./skills/outreach-automator/) | Automated outreach and follow-up workflows | `node` |
 | 📥 [social-inbox](./skills/social-inbox/) | Unified social inbox across platforms | `node` |
 | 💳 [stripe-x402](./skills/stripe-x402/) | Stripe integration with x402 payment protocol | `node` |
+| 📊 [system-monitor](./skills/system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services | `node` |
 | 🔥 [clanker-burn](./skills/clanker-burn/) | Automated Clanker fee claim and burn pipeline | `node`, `NET_PRIVATE_KEY` |
 
 ---
