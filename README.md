@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `34 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `35 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -58,6 +58,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🎯 [alignment](./agent-skills/skills/alignment/) | Clanker fee burn pipeline using Bankr API - no private keys needed |
 | 📝 [article-pipeline](./agent-skills/skills/article-pipeline/) | End-to-end article delivery: markdown draft to X Articles-ready package |
 | 🏆 [bankr-airdrop](./agent-skills/skills/bankr-airdrop/) | Query Bankr leaderboard rankings, user profiles, and export wallet lists for airdrops |
+| 💾 [backup-manager](./agent-skills/skills/backup-manager/) | Automated backup creation, encryption, rotation, and restoration for AI agents |
 | 🏷️ [basename-register](./agent-skills/skills/basename-register/) | Register `.base.eth` names for AI agent wallets on Base |
 | 🔥 [clanker-burn](./agent-skills/skills/clanker-burn/) | Automated end-to-end Clanker fee claim → rebalance → burn → treasury pipeline |
 | 🧹 [clanker-harvest](./agent-skills/skills/clanker-harvest/) | Claims Clanker fees and implements 50% buy-and-burn mechanism for $AXIOM token |

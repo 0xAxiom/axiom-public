@@ -15,6 +15,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🚦 [api-throttle](./skills/api-throttle/) | Intelligent API rate limiting, request queuing, backoff strategies | `node` |
 | 📊 [coingecko-price](./skills/coingecko-price/) | Real-time crypto prices, alerts, market data | `node` |
 | 🏆 [bankr-airdrop](./skills/bankr-airdrop/) | Bankr leaderboard rankings, wallet export, airdrops | `node` |
+| 💾 [backup-manager](./skills/backup-manager/) | Automated backup creation, encryption, rotation, restoration | `node` |
 | 🏗️ [agent-ops](./skills/agent-ops/) | Workflow orchestration, sub-agents, task management | `node` |
 | 📈 [agent-launch-monitor](./skills/agent-launch-monitor/) | Track token metrics post-launch (price, volume, holders) | `node` |
 | 💳 [wallet-health](./skills/wallet-health/) | Monitor wallet balances, gas, and claimable Clanker fees | `node` |
