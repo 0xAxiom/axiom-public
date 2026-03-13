@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 35 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 36 skills and counting.
 
 ## Available Skills
 
@@ -36,6 +36,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 35 skills a
 | ⏰ [cron-health](./cron-health/) | Monitor agent cron jobs for failures, drift, and stuck runs | ✅ New |
 | 🛡️ [fund-sentinel](./fund-sentinel/) | Treasury monitoring and anomaly detection | ✅ Tested |
 | ⛽ [gas-optimizer](./gas-optimizer/) | Optimize transaction costs and gas usage across EVM chains | ✅ Tested |
+| 📊 [log-analyzer](./log-analyzer/) | Parse agent logs for errors, performance insights, and anomalies | ✅ New |
 | 📐 [lp-calc](./lp-calc/) | LP position calculator for Uniswap V3/V4 | ✅ Tested |
 | 📨 [outreach-automator](./outreach-automator/) | Automated outreach and follow-up workflows | ✅ Tested |
 | 📥 [social-inbox](./social-inbox/) | Unified social inbox across platforms | ✅ Tested |
