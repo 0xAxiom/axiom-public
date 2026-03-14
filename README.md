@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `36 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `37 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -65,6 +65,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🦞 [clawfomo-bot](./agent-skills/skills/clawfomo-bot/) | Algorithmic player for the ClawFomo game using Smart Vulture strategy |
 | 📈 [coingecko-price](./agent-skills/skills/coingecko-price/) | Real-time crypto prices, alerts, market data |
 | 🧠 [context-injector](./agent-skills/skills/context-injector/) | Live on-chain context for cron jobs (prevents stale data) |
+| 🔍 [dependency-scanner](./agent-skills/skills/dependency-scanner/) | Multi-language dependency scanner for outdated packages and vulnerabilities |
 | 📡 [net-protocol](./agent-skills/skills/net-protocol/) | Send and read onchain messages via Net Protocol for permanent agent communication on Base |
 | 🎯 [pitch-submit](./agent-skills/skills/pitch-submit/) | Submit structured funding pitches to Axiom Ventures, the AI-agent-managed VC fund on Base |
 | 🔥 [token-burn](./agent-skills/skills/token-burn/) | Open-source pipeline for claiming Clanker protocol fees and executing 50/50 buy-and-burn strategy |
