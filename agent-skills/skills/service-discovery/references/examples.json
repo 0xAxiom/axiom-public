@@ -1,0 +1,46 @@
+{
+  "services": [
+    {
+      "name": "GitHub API",
+      "url": "https://api.github.com",
+      "critical": true,
+      "timeout": 5000,
+      "expectedStatus": 200,
+      "headers": {
+        "User-Agent": "Service-Discovery-Agent"
+      }
+    },
+    {
+      "name": "CoinGecko API",
+      "url": "https://api.coingecko.com/api/v3/ping",
+      "critical": false,
+      "timeout": 8000,
+      "expectedStatus": 200
+    },
+    {
+      "name": "JSONPlaceholder",
+      "url": "https://jsonplaceholder.typicode.com/posts/1",
+      "critical": false,
+      "timeout": 5000,
+      "expectedStatus": 200
+    },
+    {
+      "name": "HTTPBin Status",
+      "url": "https://httpbin.org/status/200",
+      "critical": false,
+      "timeout": 5000,
+      "expectedStatus": 200
+    },
+    {
+      "name": "Base RPC",
+      "url": "https://base-mainnet.g.alchemy.com/v2/demo",
+      "critical": true,
+      "method": "POST",
+      "timeout": 10000,
+      "expectedStatus": 200,
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    }
+  ]
+}

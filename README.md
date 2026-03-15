@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `37 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `38 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -84,6 +84,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📊 [log-analyzer](./agent-skills/skills/log-analyzer/) | Parse agent logs for errors, performance insights, and anomalies |
 | 📐 [lp-calc](./agent-skills/skills/lp-calc/) | LP position calculator for Uniswap V3/V4 |
 | 📨 [outreach-automator](./agent-skills/skills/outreach-automator/) | Automated outreach and follow-up workflows |
+| 🔍 [service-discovery](./agent-skills/skills/service-discovery/) | Discover, test, and monitor external service health |
 | 📥 [social-inbox](./agent-skills/skills/social-inbox/) | Unified social inbox across platforms |
 | 💳 [stripe-x402](./agent-skills/skills/stripe-x402/) | Stripe integration with x402 payment protocol |
 | 📊 [system-monitor](./agent-skills/skills/system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services |
