@@ -1,0 +1,81 @@
+{
+  "recipients": {
+    "melted": {
+      "timezone": "America/Los_Angeles",
+      "quietHours": { 
+        "start": "23:00", 
+        "end": "08:00" 
+      },
+      "channels": {
+        "low": ["telegram"],
+        "medium": ["discord", "telegram"],
+        "high": ["telegram", "email"],
+        "emergency": ["telegram", "discord", "email", "sms"]
+      }
+    },
+    "team": {
+      "timezone": "UTC",
+      "channels": {
+        "low": ["discord"],
+        "medium": ["discord"],
+        "high": ["discord", "telegram"],
+        "emergency": ["discord", "telegram", "email"]
+      }
+    },
+    "dev": {
+      "timezone": "America/New_York",
+      "quietHours": { 
+        "start": "22:00", 
+        "end": "09:00" 
+      },
+      "channels": {
+        "low": ["discord"],
+        "medium": ["discord", "telegram"],
+        "high": ["telegram", "email"],
+        "emergency": ["telegram", "discord", "email"]
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "token": "YOUR_TELEGRAM_BOT_TOKEN",
+      "chatId": "YOUR_CHAT_ID"
+    },
+    "discord": {
+      "enabled": true,
+      "webhookUrl": "YOUR_DISCORD_WEBHOOK_URL"
+    },
+    "email": {
+      "enabled": false,
+      "smtp": {
+        "host": "smtp.gmail.com",
+        "port": 587,
+        "secure": false,
+        "auth": {
+          "user": "your-email@gmail.com",
+          "pass": "your-app-password"
+        }
+      },
+      "from": "your-agent@your-domain.com",
+      "to": "alerts@your-domain.com"
+    },
+    "sms": {
+      "enabled": false,
+      "provider": "twilio",
+      "accountSid": "YOUR_TWILIO_ACCOUNT_SID",
+      "authToken": "YOUR_TWILIO_AUTH_TOKEN",
+      "fromNumber": "+1234567890",
+      "toNumber": "+0987654321"
+    }
+  },
+  "settings": {
+    "rateLimiting": {
+      "enabled": true,
+      "windowMs": 60000,
+      "maxNotifications": 10
+    },
+    "retryAttempts": 3,
+    "retryDelayMs": 1000
+  }
+}
