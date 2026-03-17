@@ -18,6 +18,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🏆 [bankr-airdrop](./skills/bankr-airdrop/) | Bankr leaderboard rankings, wallet export, airdrops | `node` |
 | 💾 [backup-manager](./skills/backup-manager/) | Automated backup creation, encryption, rotation, restoration | `node` |
 | 🏗️ [agent-ops](./skills/agent-ops/) | Workflow orchestration, sub-agents, task management | `node` |
+| 🩺 [agent-health](./skills/agent-health/) | Monitor agent performance, API health, auto-recovery, health scoring | `node` |
 | 📈 [agent-launch-monitor](./skills/agent-launch-monitor/) | Track token metrics post-launch (price, volume, holders) | `node` |
 | 💳 [wallet-health](./skills/wallet-health/) | Monitor wallet balances, gas, and claimable Clanker fees | `node` |
 | 🦞 [clawfomo-bot](./skills/clawfomo-bot/) | Strategic player for ClawFomo (last-bidder-wins game) | `node`, `NET_PRIVATE_KEY` |

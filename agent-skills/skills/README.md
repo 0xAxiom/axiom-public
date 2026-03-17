@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 39 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 40 skills and counting.
 
 ## Available Skills
 
@@ -11,6 +11,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 39 skills a
 | 🏗️ [agent-launchpad](./agent-launchpad/) | Launch and deploy AI agent tokens on Base | ✅ Tested |
 | ⚙️ [agent-ops](./agent-ops/) | Workflow orchestration, sub-agent architecture, task management | ✅ Tested |
 | 🛡️ [agent-security](./agent-security/) | Security guardrails, self-audit tools, secret scanning | ✅ Tested |
+| 🩺 [agent-health](./agent-health/) | Monitor agent performance, API health, auto-recovery, health scoring | ✅ Tested |
 | 🚦 [api-throttle](./api-throttle/) | Intelligent API rate limiting, request queuing, backoff strategies | ✅ Tested |
 | 🪂 [bankr-airdrop](./bankr-airdrop/) | Bankr leaderboard rankings, profiles, wallet export | ✅ Tested |
 | 💾 [backup-manager](./backup-manager/) | Automated backup creation, encryption, rotation, and restoration | ✅ Tested |
@@ -79,7 +80,7 @@ skill-name/
 - uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, wallet-health, gas-optimizer
 
 **Agent Infrastructure**
-- agent-ops, agent-security, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, context-injector, dependency-scanner, cron-health, code-validator, notification-router, service-discovery, system-monitor
+- agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, context-injector, dependency-scanner, cron-health, code-validator, notification-router, service-discovery, system-monitor
 
 **Identity & Messaging**
 - basename-register, net-protocol, tx-verify
