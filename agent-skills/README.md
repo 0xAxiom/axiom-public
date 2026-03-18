@@ -10,6 +10,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🏷️ [basename-register](./skills/basename-register/) | Register `.base.eth` names | `node`, `NET_PRIVATE_KEY` |
 | 📡 [net-protocol](./skills/net-protocol/) | Onchain messaging on Base | `netp` CLI, `NET_PRIVATE_KEY` |
 | 📢 [notification-router](./skills/notification-router/) | Smart notification routing with urgency levels and timezone awareness | `node` |
+| 🛡️ [rpc-guardian](./skills/rpc-guardian/) | Monitor RPC endpoint health and provide automatic failover | `node` |
 | ✅ [tx-verify](./skills/tx-verify/) | Transaction verification patterns | `node` |
 | 🦄 [uniswap-v4-lp](./skills/uniswap-v4-lp/) | Uniswap V4 LP management on Base | `node`, `NET_PRIVATE_KEY` |
 | 🛡️ [agent-security](./skills/agent-security/) | Security guardrails, audit tools, secret scanner | `node` |

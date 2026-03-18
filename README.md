@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `40 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `41 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -70,6 +70,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📡 [net-protocol](./agent-skills/skills/net-protocol/) | Send and read onchain messages via Net Protocol for permanent agent communication on Base |
 | 📢 [notification-router](./agent-skills/skills/notification-router/) | Smart notification routing with urgency levels and timezone awareness |
 | 🎯 [pitch-submit](./agent-skills/skills/pitch-submit/) | Submit structured funding pitches to Axiom Ventures, the AI-agent-managed VC fund on Base |
+| 🛡️ [rpc-guardian](./agent-skills/skills/rpc-guardian/) | Monitor RPC endpoint health and provide automatic failover for reliable blockchain access |
 | 🔥 [token-burn](./agent-skills/skills/token-burn/) | Open-source pipeline for claiming Clanker protocol fees and executing 50/50 buy-and-burn strategy |
 | 🐦 [twitter-algorithm](./agent-skills/skills/twitter-algorithm/) | Optimize tweets for organic reach using insights from Twitter's open-source algorithm |
 | ✅ [tx-verify](./agent-skills/skills/tx-verify/) | Verify blockchain transactions actually succeeded before announcing success |

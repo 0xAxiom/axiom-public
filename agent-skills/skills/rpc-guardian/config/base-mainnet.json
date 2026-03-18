@@ -1,0 +1,41 @@
+{
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "endpoints": [
+    {
+      "name": "Base Official",
+      "url": "https://mainnet.base.org",
+      "priority": 1,
+      "timeout": 5000
+    },
+    {
+      "name": "Coinbase Cloud",
+      "url": "https://api.developer.coinbase.com/rpc/v1/base",
+      "priority": 2,
+      "timeout": 5000
+    },
+    {
+      "name": "Omnia Public",
+      "url": "https://endpoints.omniatech.io/v1/base/mainnet/public",
+      "priority": 3,
+      "timeout": 8000
+    },
+    {
+      "name": "1RPC",
+      "url": "https://1rpc.io/base",
+      "priority": 4,
+      "timeout": 8000
+    },
+    {
+      "name": "Ankr Public",
+      "url": "https://rpc.ankr.com/base",
+      "priority": 5,
+      "timeout": 10000
+    }
+  ],
+  "thresholds": {
+    "maxLatency": 2000,
+    "maxBlockLag": 5,
+    "minSuccessRate": 0.95
+  }
+}
