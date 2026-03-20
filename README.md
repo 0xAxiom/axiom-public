@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `41 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `42 skills` · `12 essays` · `338K+ lines`
 
 ---
 

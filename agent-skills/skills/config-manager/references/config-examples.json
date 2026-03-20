@@ -1,0 +1,151 @@
+{
+  "basic_agent_config": {
+    "agent": {
+      "name": "TradingBot",
+      "version": "1.0.0",
+      "environment": "production"
+    },
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "name": "trading_db",
+      "ssl": true
+    },
+    "api": {
+      "rate_limit": 1000,
+      "timeout": 30000,
+      "retry_attempts": 3,
+      "base_url": "https://api.example.com"
+    },
+    "security": {
+      "encryption_enabled": true,
+      "audit_logging": true,
+      "session_timeout": 3600
+    },
+    "features": {
+      "auto_trading": false,
+      "risk_management": true,
+      "notifications": true
+    }
+  },
+  
+  "development_config": {
+    "agent": {
+      "name": "DevBot",
+      "version": "0.1.0",
+      "environment": "development"
+    },
+    "database": {
+      "host": "127.0.0.1",
+      "port": 5432,
+      "name": "dev_db"
+    },
+    "api": {
+      "rate_limit": 100,
+      "timeout": 10000,
+      "retry_attempts": 1,
+      "base_url": "http://localhost:3000"
+    },
+    "debug": {
+      "enabled": true,
+      "log_level": "debug",
+      "verbose_errors": true
+    },
+    "features": {
+      "auto_trading": false,
+      "mock_mode": true
+    }
+  },
+
+  "minimal_config": {
+    "database": {
+      "host": "localhost"
+    },
+    "api": {
+      "enabled": true
+    }
+  },
+
+  "complex_config": {
+    "agent": {
+      "name": "MultiStrategyBot",
+      "strategies": ["momentum", "arbitrage", "market_making"],
+      "max_positions": 10
+    },
+    "database": {
+      "primary": {
+        "host": "db1.example.com",
+        "port": 5432,
+        "pool_size": 20
+      },
+      "replica": {
+        "host": "db2.example.com",
+        "port": 5432,
+        "read_only": true
+      }
+    },
+    "exchanges": {
+      "binance": {
+        "enabled": true,
+        "sandbox": false,
+        "rate_limit": 1200
+      },
+      "coinbase": {
+        "enabled": true,
+        "sandbox": true,
+        "rate_limit": 10
+      }
+    },
+    "risk_management": {
+      "max_loss_per_trade": 0.02,
+      "max_portfolio_risk": 0.1,
+      "stop_loss_enabled": true,
+      "position_sizing": {
+        "method": "kelly",
+        "max_leverage": 2.0
+      }
+    },
+    "monitoring": {
+      "health_check_interval": 60,
+      "metrics_enabled": true,
+      "alerts": {
+        "telegram": {
+          "enabled": true,
+          "chat_id": "-1001234567890"
+        },
+        "email": {
+          "enabled": false
+        }
+      }
+    }
+  },
+
+  "schema_example": {
+    "required": [
+      "database.host",
+      "api.base_url",
+      "security.encryption_enabled"
+    ],
+    "types": {
+      "database.port": "number",
+      "api.rate_limit": "number",
+      "features.auto_trading": "boolean",
+      "security.encryption_enabled": "boolean",
+      "agent.strategies": "array"
+    },
+    "ranges": {
+      "database.port": { "min": 1, "max": 65535 },
+      "api.rate_limit": { "min": 1, "max": 10000 },
+      "api.timeout": { "min": 1000, "max": 300000 }
+    },
+    "formats": {
+      "database.host": "^[a-zA-Z0-9.-]+$",
+      "api.base_url": "^https?://[a-zA-Z0-9.-]+",
+      "agent.version": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "dependencies": {
+      "features.auto_trading": ["risk_management.max_loss_per_trade"],
+      "database.replica": ["database.primary"]
+    }
+  }
+}
