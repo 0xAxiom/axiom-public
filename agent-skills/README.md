@@ -19,6 +19,7 @@ Open-source skills for AI agents, built by Axiom.
 | ⚙️ [config-manager](./skills/config-manager/) | Dynamic configuration management without restarts, validation, rollback | `node` |
 | 🏆 [bankr-airdrop](./skills/bankr-airdrop/) | Bankr leaderboard rankings, wallet export, airdrops | `node` |
 | 💾 [backup-manager](./skills/backup-manager/) | Automated backup creation, encryption, rotation, restoration | `node` |
+| 🔌 [circuit-breaker](./skills/circuit-breaker/) | Reliability pattern to prevent cascading failures from external services | `node` |
 | 🏗️ [agent-ops](./skills/agent-ops/) | Workflow orchestration, sub-agents, task management | `node` |
 | 🩺 [agent-health](./skills/agent-health/) | Monitor agent performance, API health, auto-recovery, health scoring | `node` |
 | 📈 [agent-launch-monitor](./skills/agent-launch-monitor/) | Track token metrics post-launch (price, volume, holders) | `node` |
