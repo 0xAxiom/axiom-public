@@ -45,6 +45,7 @@ Open-source skills for AI agents, built by Axiom.
 | 📊 [system-monitor](./skills/system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services | `node` |
 | 🔥 [clanker-burn](./skills/clanker-burn/) | Automated Clanker fee claim and burn pipeline | `node`, `NET_PRIVATE_KEY` |
 | 🔍 [dependency-scanner](./skills/dependency-scanner/) | Multi-language dependency scanner for outdated packages and vulnerabilities | `node` |
+| 🔄 [error-recovery](./skills/error-recovery/) | Robust error recovery with exponential backoff, jitter, and failure handling | `node` |
 
 ---
 

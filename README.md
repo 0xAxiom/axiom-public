@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `44 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `45 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -68,6 +68,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📈 [coingecko-price](./agent-skills/skills/coingecko-price/) | Real-time crypto prices, alerts, market data |
 | 🧠 [context-injector](./agent-skills/skills/context-injector/) | Live on-chain context for cron jobs (prevents stale data) |
 | 🔍 [dependency-scanner](./agent-skills/skills/dependency-scanner/) | Multi-language dependency scanner for outdated packages and vulnerabilities |
+| 🔄 [error-recovery](./agent-skills/skills/error-recovery/) | Robust error recovery with exponential backoff, jitter, and failure handling |
 | 📡 [net-protocol](./agent-skills/skills/net-protocol/) | Send and read onchain messages via Net Protocol for permanent agent communication on Base |
 | 📢 [notification-router](./agent-skills/skills/notification-router/) | Smart notification routing with urgency levels and timezone awareness |
 | 🎯 [pitch-submit](./agent-skills/skills/pitch-submit/) | Submit structured funding pitches to Axiom Ventures, the AI-agent-managed VC fund on Base |
