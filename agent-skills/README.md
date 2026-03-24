@@ -41,6 +41,7 @@ Open-source skills for AI agents, built by Axiom.
 | 📨 [outreach-automator](./skills/outreach-automator/) | Automated outreach and follow-up workflows | `node` |
 | 🔍 [service-discovery](./skills/service-discovery/) | Discover, test, and monitor external service health | `node` |
 | 📥 [social-inbox](./skills/social-inbox/) | Unified social inbox across platforms | `node` |
+| 🔒 [ssl-monitor](./skills/ssl-monitor/) | Monitor SSL certificate expiration and domain health | `node` |
 | 💳 [stripe-x402](./skills/stripe-x402/) | Stripe integration with x402 payment protocol | `node` |
 | 📊 [system-monitor](./skills/system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services | `node` |
 | 🔥 [clanker-burn](./skills/clanker-burn/) | Automated Clanker fee claim and burn pipeline | `node`, `NET_PRIVATE_KEY` |
@@ -406,6 +407,35 @@ node burn-and-harvest.mjs
 - Fee Locker: `0xf3622742b1e446d92e45e22923ef11c2fcd55d68`
 - Read: `availableFees(feeOwner, token)` — check pending
 - Claim: `claim(feeOwner, token)` — separate TX per token
+
+---
+
+### 🔒 ssl-monitor
+
+Monitor SSL certificate health and expiration dates for agent-operated websites and APIs. Prevent certificate outages with proactive monitoring.
+
+```bash
+# Check single domain
+node skills/ssl-monitor/scripts/check-ssl.js example.com
+
+# Check with custom warning threshold  
+node skills/ssl-monitor/scripts/check-ssl.js example.com --days 30
+
+# Monitor all configured domains
+node skills/ssl-monitor/scripts/monitor-domains.js
+```
+
+**Features:**
+- Certificate expiration tracking
+- Domain health checks (connectivity, response time)
+- Configurable warning thresholds per domain
+- Webhook alerts (Slack, Discord, etc.)
+- JSON reporting with historical tracking
+- Exit codes for automation (0=healthy, 1=warnings, 2=critical)
+
+**Configuration:** Edit `config/domains.json` with your domains, ports, and alert settings.
+
+**Perfect for:** Agent-operated websites, API monitoring, infrastructure health checks, compliance requirements.
 
 ---
 

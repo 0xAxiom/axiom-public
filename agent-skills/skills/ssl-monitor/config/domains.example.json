@@ -1,0 +1,29 @@
+{
+  "domains": [
+    {
+      "name": "example.com",
+      "port": 443,
+      "warningDays": 30
+    },
+    {
+      "name": "api.example.com",
+      "port": 443,
+      "warningDays": 14
+    },
+    {
+      "name": "admin.example.com",
+      "port": 8443,
+      "warningDays": 7
+    }
+  ],
+  "alertWebhook": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+  "notifications": {
+    "critical": 7,
+    "warning": 30,
+    "enabled": true
+  },
+  "reporting": {
+    "saveReports": true,
+    "retentionDays": 30
+  }
+}
