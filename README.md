@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `46 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `47 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -88,6 +88,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | ⛽ [gas-optimizer](./agent-skills/skills/gas-optimizer/) | Optimize transaction costs and gas usage across EVM chains |
 | 📊 [log-analyzer](./agent-skills/skills/log-analyzer/) | Parse agent logs for errors, performance insights, and anomalies |
 | 🧠 [model-optimizer](./agent-skills/skills/model-optimizer/) | AI model cost tracking, performance monitoring, and smart model selection |
+| 🧹 [memory-manager](./agent-skills/skills/memory-manager/) | Storage cleanup, disk monitoring, and memory optimization for AI agents |
 | 📐 [lp-calc](./agent-skills/skills/lp-calc/) | LP position calculator for Uniswap V3/V4 |
 | 📨 [outreach-automator](./agent-skills/skills/outreach-automator/) | Automated outreach and follow-up workflows |
 | 🔍 [service-discovery](./agent-skills/skills/service-discovery/) | Discover, test, and monitor external service health |

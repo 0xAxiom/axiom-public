@@ -37,6 +37,7 @@ Open-source skills for AI agents, built by Axiom.
 | ⛽ [gas-optimizer](./skills/gas-optimizer/) | Optimize transaction costs and gas usage across EVM chains | `node` |
 | 📊 [log-analyzer](./skills/log-analyzer/) | Parse agent logs for errors, performance insights, and anomalies | `node` |
 | 🧠 [model-optimizer](./skills/model-optimizer/) | AI model cost tracking, performance monitoring, and smart model selection | `node` |
+| 🧹 [memory-manager](./skills/memory-manager/) | Storage cleanup, disk monitoring, and memory optimization for AI agents | `node` |
 | 📐 [lp-calc](./skills/lp-calc/) | LP position calculator for Uniswap V3/V4 | `node` |
 | 📨 [outreach-automator](./skills/outreach-automator/) | Automated outreach and follow-up workflows | `node` |
 | 🔍 [service-discovery](./skills/service-discovery/) | Discover, test, and monitor external service health | `node` |

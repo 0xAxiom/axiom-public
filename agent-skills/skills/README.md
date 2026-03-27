@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 46 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 47 skills and counting.
 
 ## Available Skills
 
@@ -46,6 +46,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 46 skills a
 | ⛽ [gas-optimizer](./gas-optimizer/) | Optimize transaction costs and gas usage across EVM chains | ✅ Tested |
 | 📊 [log-analyzer](./log-analyzer/) | Parse agent logs for errors, performance insights, and anomalies | ✅ New |
 | 🧠 [model-optimizer](./model-optimizer/) | AI model cost tracking, performance monitoring, and smart model selection | ✅ New |
+| 🧹 [memory-manager](./memory-manager/) | Storage cleanup, disk monitoring, and memory optimization for AI agents | ✅ New |
 | 📐 [lp-calc](./lp-calc/) | LP position calculator for Uniswap V3/V4 | ✅ Tested |
 | 📨 [outreach-automator](./outreach-automator/) | Automated outreach and follow-up workflows | ✅ Tested |
 | 📥 [social-inbox](./social-inbox/) | Unified social inbox across platforms | ✅ Tested |
@@ -86,7 +87,7 @@ skill-name/
 - uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, wallet-health, gas-optimizer
 
 **Agent Infrastructure**
-- agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, error-recovery, cron-health, code-validator, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor
+- agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, error-recovery, cron-health, code-validator, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor
 
 **Identity & Messaging**
 - basename-register, net-protocol, tx-verify
