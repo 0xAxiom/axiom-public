@@ -1,0 +1,13 @@
+{
+  "jobsPath": "~/.openclaw/cron/jobs.json",
+  "gatewayLogPath": "~/.openclaw/logs/gateway.log",
+  "thresholds": {
+    "minConsecutiveErrors": 3,
+    "maxNextRunStaleHours": 24,
+    "minGatewayReplays": 3
+  },
+  "preflight": {
+    "exitOnPhantom": true,
+    "logSkipsTo": "memory/phantom-skips.jsonl"
+  }
+}
