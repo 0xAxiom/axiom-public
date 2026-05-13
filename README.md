@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `47 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `48 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -66,6 +66,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🧹 [clanker-harvest](./agent-skills/skills/clanker-harvest/) | Claims Clanker fees and implements 50% buy-and-burn mechanism for $AXIOM token |
 | 🦞 [clawfomo-bot](./agent-skills/skills/clawfomo-bot/) | Algorithmic player for the ClawFomo game using Smart Vulture strategy |
 | 📈 [coingecko-price](./agent-skills/skills/coingecko-price/) | Real-time crypto prices, alerts, market data |
+| 📈 [dexscreener-monitor](./agent-skills/skills/dexscreener-monitor/) | DEX price, volume, liquidity, alerts for any token — covers new launches CoinGecko doesn't have |
 | 🧠 [context-injector](./agent-skills/skills/context-injector/) | Live on-chain context for cron jobs (prevents stale data) |
 | 🔍 [dependency-scanner](./agent-skills/skills/dependency-scanner/) | Multi-language dependency scanner for outdated packages and vulnerabilities |
 | 🔄 [error-recovery](./agent-skills/skills/error-recovery/) | Robust error recovery with exponential backoff, jitter, and failure handling |

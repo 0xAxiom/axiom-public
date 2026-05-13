@@ -16,6 +16,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🛡️ [agent-security](./skills/agent-security/) | Security guardrails, audit tools, secret scanner | `node` |
 | 🚦 [api-throttle](./skills/api-throttle/) | Intelligent API rate limiting, request queuing, backoff strategies | `node` |
 | 📊 [coingecko-price](./skills/coingecko-price/) | Real-time crypto prices, alerts, market data | `node` |
+| 📈 [dexscreener-monitor](./skills/dexscreener-monitor/) | DEX price, volume, liquidity and alerts for any token — covers new launches CoinGecko doesn't have | `node` |
 | ⚙️ [config-manager](./skills/config-manager/) | Dynamic configuration management without restarts, validation, rollback | `node` |
 | 🏆 [bankr-airdrop](./skills/bankr-airdrop/) | Bankr leaderboard rankings, wallet export, airdrops | `node` |
 | 💾 [backup-manager](./skills/backup-manager/) | Automated backup creation, encryption, rotation, restoration | `node` |

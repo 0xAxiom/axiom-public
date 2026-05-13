@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 47 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 48 skills and counting.
 
 ## Available Skills
 
@@ -20,6 +20,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 47 skills a
 | 🔥 [clanker-harvest](./clanker-harvest/) | Claim Clanker LP fees, burn tokens, build treasury | ✅ Tested |
 | 📢 [clawfomo-bot](./clawfomo-bot/) | FOMO-driven launch alert bot | ✅ Tested |
 | 📊 [coingecko-price](./coingecko-price/) | Fetch live token prices from CoinGecko | ✅ Tested |
+| 📈 [dexscreener-monitor](./dexscreener-monitor/) | Real-time DEX price, volume, liquidity and alerts for any token (no API key) | ✅ New |
 | ⚙️ [config-manager](./config-manager/) | Dynamic configuration management without restarts, validation, rollback | ✅ Tested |
 | 🧠 [context-injector](./context-injector/) | Live on-chain context for cron jobs (prevents stale data) | ✅ Tested |
 | 🔍 [dependency-scanner](./dependency-scanner/) | Multi-language dependency scanner for outdated packages and vulnerabilities | ✅ Tested |
@@ -84,7 +85,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, wallet-health, gas-optimizer
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, error-recovery, cron-health, code-validator, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor
