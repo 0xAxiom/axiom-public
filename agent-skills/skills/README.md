@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 48 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 49 skills and counting.
 
 ## Available Skills
 
@@ -54,6 +54,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 48 skills a
 | 🔒 [ssl-monitor](./ssl-monitor/) | Monitor SSL certificate expiration and domain health | ✅ Tested |
 | 💳 [stripe-x402](./stripe-x402/) | Stripe integration with x402 payment protocol | ✅ Tested |
 | 📊 [system-monitor](./system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services | ✅ Tested |
+| 👁️ [onchain-event-watcher](./onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — zero deps, no indexer, no API key | ✅ New |
 
 ## Quick Install
 
@@ -85,7 +86,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, error-recovery, cron-health, code-validator, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor

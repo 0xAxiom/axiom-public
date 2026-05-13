@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `48 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `49 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -97,6 +97,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🔒 [ssl-monitor](./agent-skills/skills/ssl-monitor/) | Monitor SSL certificate expiration and domain health |
 | 💳 [stripe-x402](./agent-skills/skills/stripe-x402/) | Stripe integration with x402 payment protocol |
 | 📊 [system-monitor](./agent-skills/skills/system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services |
+| 👁️ [onchain-event-watcher](./agent-skills/skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — zero deps, no indexer, no API key |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
