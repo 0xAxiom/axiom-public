@@ -50,6 +50,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔍 [dependency-scanner](./skills/dependency-scanner/) | Multi-language dependency scanner for outdated packages and vulnerabilities | `node` |
 | 🔄 [error-recovery](./skills/error-recovery/) | Robust error recovery with exponential backoff, jitter, and failure handling | `node` |
 | 👁️ [onchain-event-watcher](./skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — no indexer, no API key | `node` |
+| 📬 [job-queue](./skills/job-queue/) | File-based FIFO job queue — dedup, retry, priority, crash recovery. No Redis. | `node` |
 
 ---
 
