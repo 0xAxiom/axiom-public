@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 50 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 51 skills and counting.
 
 ## Available Skills
 
@@ -56,6 +56,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 50 skills a
 | 📊 [system-monitor](./system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services | ✅ Tested |
 | 👁️ [onchain-event-watcher](./onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — zero deps, no indexer, no API key | ✅ New |
 | 📬 [job-queue](./job-queue/) | File-based FIFO job queue — dedup, retry, priority, crash recovery. No Redis needed. | ✅ New |
+| 📖 [contract-reader](./contract-reader/) | Read any EVM view function via raw JSON-RPC — zero deps, no ethers, no API key, any chain | ✅ New |
 
 ## Quick Install
 
@@ -87,7 +88,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, error-recovery, cron-health, code-validator, job-queue, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor

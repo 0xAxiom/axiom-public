@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `50 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `51 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -99,6 +99,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📊 [system-monitor](./agent-skills/skills/system-monitor/) | Comprehensive system health monitoring - disk, memory, CPU, services |
 | 👁️ [onchain-event-watcher](./agent-skills/skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — zero deps, no indexer, no API key |
 | 📬 [job-queue](./agent-skills/skills/job-queue/) | File-based FIFO job queue for agents — dedup, retry, priority, crash recovery. No Redis needed. |
+| 📖 [contract-reader](./agent-skills/skills/contract-reader/) | Read any EVM view function via raw JSON-RPC — zero deps, no ethers, no API key, any EVM chain |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
