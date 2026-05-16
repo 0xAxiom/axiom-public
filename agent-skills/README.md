@@ -51,6 +51,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔄 [error-recovery](./skills/error-recovery/) | Robust error recovery with exponential backoff, jitter, and failure handling | `node` |
 | 👁️ [onchain-event-watcher](./skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — no indexer, no API key | `node` |
 | 📬 [job-queue](./skills/job-queue/) | File-based FIFO job queue — dedup, retry, priority, crash recovery. No Redis. | `node` |
+| 🧬 [awaken-normie](./skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card | `node`, `NET_PRIVATE_KEY` |
 
 ---
 

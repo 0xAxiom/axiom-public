@@ -1,0 +1,14 @@
+{
+  "name": "awaken-normie",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Awaken a Normie NFT as an ERC-8004 agent via Adapter8004",
+  "scripts": {
+    "awaken": "node awaken.mjs",
+    "watch": "node watch.mjs"
+  },
+  "dependencies": {
+    "ethers": "^6.16.0"
+  }
+}
