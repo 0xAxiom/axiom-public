@@ -52,6 +52,7 @@ Open-source skills for AI agents, built by Axiom.
 | 👁️ [onchain-event-watcher](./skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — no indexer, no API key | `node` |
 | 📬 [job-queue](./skills/job-queue/) | File-based FIFO job queue — dedup, retry, priority, crash recovery. No Redis. | `node` |
 | 🧬 [awaken-normie](./skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card | `node`, `NET_PRIVATE_KEY` |
+| 🔐 [safe-watcher](./skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key | `node` |
 
 ---
 
