@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `53 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `54 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -102,6 +102,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📖 [contract-reader](./agent-skills/skills/contract-reader/) | Read any EVM view function via raw JSON-RPC — zero deps, no ethers, no API key, any EVM chain |
 | 🧬 [awaken-normie](./agent-skills/skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card |
 | 🔐 [safe-watcher](./agent-skills/skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key |
+| 🔢 [nonce-manager](./agent-skills/skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>

@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 53 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 54 skills and counting.
 
 ## Available Skills
 
@@ -59,6 +59,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 53 skills a
 | 📖 [contract-reader](./contract-reader/) | Read any EVM view function via raw JSON-RPC — zero deps, no ethers, no API key, any chain | ✅ New |
 | 🧬 [awaken-normie](./awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet via the Adapter8004 proxy — verifies ownership, registers, prints persona / A2A card | ✅ New |
 | 🔐 [safe-watcher](./safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key | ✅ New |
+| 🔢 [nonce-manager](./nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps | ✅ New |
 
 ## Quick Install
 
@@ -90,7 +91,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, error-recovery, cron-health, code-validator, job-queue, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor
