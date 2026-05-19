@@ -54,6 +54,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🧬 [awaken-normie](./skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card | `node`, `NET_PRIVATE_KEY` |
 | 🔐 [safe-watcher](./skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key | `node` |
 | 🔢 [nonce-manager](./skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps | `node` |
+| 🧪 [tx-simulator](./skills/tx-simulator/) | Pre-flight EVM transaction simulation — decode reverts, estimate gas, check balance before sending. Zero deps | `node` |
 
 ---
 
