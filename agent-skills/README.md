@@ -55,6 +55,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔐 [safe-watcher](./skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key | `node` |
 | 🔢 [nonce-manager](./skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps | `node` |
 | 🧪 [tx-simulator](./skills/tx-simulator/) | Pre-flight EVM transaction simulation — decode reverts, estimate gas, check balance before sending. Zero deps | `node` |
+| 🔍 [env-validator](./skills/env-validator/) | Pre-flight env var validation — required, wallet format, URL, API key prefix, regex. Config file or CLI flags. Zero deps | `node` |
 
 ---
 

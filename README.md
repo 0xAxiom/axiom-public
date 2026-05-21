@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `55 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `56 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -104,6 +104,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🔐 [safe-watcher](./agent-skills/skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key |
 | 🔢 [nonce-manager](./agent-skills/skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps |
 | 🧪 [tx-simulator](./agent-skills/skills/tx-simulator/) | Pre-flight EVM transaction simulation — decode reverts, estimate gas, check balance before sending. Zero deps |
+| 🔍 [env-validator](./agent-skills/skills/env-validator/) | Pre-flight env var validation — required, wallet format, URL, API key prefix, regex. Config file or CLI flags. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
