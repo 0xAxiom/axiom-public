@@ -56,6 +56,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔢 [nonce-manager](./skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps | `node` |
 | 🧪 [tx-simulator](./skills/tx-simulator/) | Pre-flight EVM transaction simulation — decode reverts, estimate gas, check balance before sending. Zero deps | `node` |
 | 🔍 [env-validator](./skills/env-validator/) | Pre-flight env var validation — required, wallet format, URL, API key prefix, regex. Config file or CLI flags. Zero deps | `node` |
+| 🔑 [token-allowance](./skills/token-allowance/) | Check, list, and revoke ERC-20 approvals — audit infinite approvals, generate revoke calldata. Zero deps | `node` |
 
 ---
 
