@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 57 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 58 skills and counting.
 
 ## Available Skills
 
@@ -63,6 +63,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 57 skills a
 | 🧪 [tx-simulator](./tx-simulator/) | Pre-flight EVM transaction simulation — decode reverts, estimate gas, check balance before sending. Zero deps | ✅ New |
 | 🔍 [env-validator](./env-validator/) | Pre-flight environment variable validation — required, wallet format, URL, API key prefix, regex. Zero deps | ✅ New |
 | 🔑 [token-allowance](./token-allowance/) | Check, list, and revoke ERC-20 approvals — audit infinite approvals, generate revoke calldata. Zero deps | ✅ New |
+| 🪞 [proxy-resolver](./proxy-resolver/) | Detect EIP-1167 minimal proxies, ERC-1967 / UUPS / beacon proxies and resolve to the implementation. Zero deps | ✅ New |
 
 ## Quick Install
 
@@ -94,7 +95,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, env-validator, error-recovery, cron-health, code-validator, job-queue, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor
