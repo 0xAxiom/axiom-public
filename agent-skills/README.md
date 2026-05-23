@@ -58,6 +58,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔍 [env-validator](./skills/env-validator/) | Pre-flight env var validation — required, wallet format, URL, API key prefix, regex. Config file or CLI flags. Zero deps | `node` |
 | 🔑 [token-allowance](./skills/token-allowance/) | Check, list, and revoke ERC-20 approvals — audit infinite approvals, generate revoke calldata. Zero deps | `node` |
 | 🪞 [proxy-resolver](./skills/proxy-resolver/) | Detect EIP-1167 minimal proxies, ERC-1967 / UUPS / beacon proxies and resolve to the implementation. Zero deps | `node` |
+| 📡 [event-decoder](./skills/event-decoder/) | Decode raw EVM event logs from eth_getLogs — Transfer, Swap, Approval, any event. Zero deps, pure Node.js | `node` |
 
 ---
 
