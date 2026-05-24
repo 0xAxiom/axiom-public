@@ -101,6 +101,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📬 [job-queue](./agent-skills/skills/job-queue/) | File-based FIFO job queue for agents — dedup, retry, priority, crash recovery. No Redis needed. |
 | 📖 [contract-reader](./agent-skills/skills/contract-reader/) | Read any EVM view function via raw JSON-RPC — zero deps, no ethers, no API key, any EVM chain |
 | 🧬 [awaken-normie](./agent-skills/skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card |
+| 🤖 [normie-agent-kit](./agent-skills/skills/normie-agent-kit/) | Stand up an inbound responder for an awakened Normie — botchan mentions → local Ollama with the Normie's live `systemPrompt` → in-persona `botchan comment`. Stdlib only |
 | 🔐 [safe-watcher](./agent-skills/skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key |
 | 🔢 [nonce-manager](./agent-skills/skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps |
 | 🧪 [tx-simulator](./agent-skills/skills/tx-simulator/) | Pre-flight EVM transaction simulation — decode reverts, estimate gas, check balance before sending. Zero deps |
@@ -108,6 +109,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🔑 [token-allowance](./agent-skills/skills/token-allowance/) | Check, list, and revoke ERC-20 approvals — audit infinite approvals, generate revoke calldata. Zero deps |
 | 🪞 [proxy-resolver](./agent-skills/skills/proxy-resolver/) | Detect EIP-1167 minimal proxies, ERC-1967 / UUPS / beacon proxies and resolve to the implementation. Zero deps |
 | 📡 [event-decoder](./agent-skills/skills/event-decoder/) | Decode raw EVM event logs from eth_getLogs — Transfer, Swap, Approval, any event. Zero deps, pure Node.js |
+| 🔓 [calldata-decoder](./agent-skills/skills/calldata-decoder/) | Decode raw EVM tx input into a human-readable function call — resolves 4-byte selectors via openchain.xyz, decodes params. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>

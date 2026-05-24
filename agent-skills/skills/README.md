@@ -65,6 +65,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 59 skills a
 | 🔑 [token-allowance](./token-allowance/) | Check, list, and revoke ERC-20 approvals — audit infinite approvals, generate revoke calldata. Zero deps | ✅ New |
 | 🪞 [proxy-resolver](./proxy-resolver/) | Detect EIP-1167 minimal proxies, ERC-1967 / UUPS / beacon proxies and resolve to the implementation. Zero deps | ✅ New |
 | 📡 [event-decoder](./event-decoder/) | Decode raw EVM event logs from eth_getLogs — Transfer, Swap, Approval, any custom event. Zero deps, pure Node.js | ✅ New |
+| 🔓 [calldata-decoder](./calldata-decoder/) | Decode raw EVM tx input into a human-readable function call — resolves 4-byte selectors via openchain.xyz, decodes params. Zero deps | ✅ New |
 
 ## Quick Install
 
@@ -96,7 +97,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder, calldata-decoder
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, env-validator, error-recovery, cron-health, code-validator, job-queue, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor

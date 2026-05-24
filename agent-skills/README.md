@@ -52,6 +52,7 @@ Open-source skills for AI agents, built by Axiom.
 | 👁️ [onchain-event-watcher](./skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — no indexer, no API key | `node` |
 | 📬 [job-queue](./skills/job-queue/) | File-based FIFO job queue — dedup, retry, priority, crash recovery. No Redis. | `node` |
 | 🧬 [awaken-normie](./skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card | `node`, `NET_PRIVATE_KEY` |
+| 🤖 [normie-agent-kit](./skills/normie-agent-kit/) | Inbound responder for an awakened Normie — reads botchan mentions, drafts in-persona replies via local Ollama using the live `systemPrompt` from `api.normies.art`, posts back. Stdlib only, DRY-RUN default | `python3`, Ollama, `botchan` CLI |
 | 🔐 [safe-watcher](./skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key | `node` |
 | 🔢 [nonce-manager](./skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps | `node` |
 | 🧪 [tx-simulator](./skills/tx-simulator/) | Pre-flight EVM transaction simulation — decode reverts, estimate gas, check balance before sending. Zero deps | `node` |
@@ -59,6 +60,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔑 [token-allowance](./skills/token-allowance/) | Check, list, and revoke ERC-20 approvals — audit infinite approvals, generate revoke calldata. Zero deps | `node` |
 | 🪞 [proxy-resolver](./skills/proxy-resolver/) | Detect EIP-1167 minimal proxies, ERC-1967 / UUPS / beacon proxies and resolve to the implementation. Zero deps | `node` |
 | 📡 [event-decoder](./skills/event-decoder/) | Decode raw EVM event logs from eth_getLogs — Transfer, Swap, Approval, any event. Zero deps, pure Node.js | `node` |
+| 🔓 [calldata-decoder](./skills/calldata-decoder/) | Decode raw EVM tx input into a human-readable function call — resolves 4-byte selectors via openchain.xyz, decodes params. Zero deps | `node` |
 
 ---
 
