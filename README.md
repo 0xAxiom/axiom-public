@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `59 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `60 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -110,6 +110,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🪞 [proxy-resolver](./agent-skills/skills/proxy-resolver/) | Detect EIP-1167 minimal proxies, ERC-1967 / UUPS / beacon proxies and resolve to the implementation. Zero deps |
 | 📡 [event-decoder](./agent-skills/skills/event-decoder/) | Decode raw EVM event logs from eth_getLogs — Transfer, Swap, Approval, any event. Zero deps, pure Node.js |
 | 🔓 [calldata-decoder](./agent-skills/skills/calldata-decoder/) | Decode raw EVM tx input into a human-readable function call — resolves 4-byte selectors via openchain.xyz, decodes params. Zero deps |
+| 📄 [abi-fetcher](./agent-skills/skills/abi-fetcher/) | Fetch verified EVM contract ABIs from Sourcify and Etherscan. Proxy-aware, local cache, 14 chains. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
