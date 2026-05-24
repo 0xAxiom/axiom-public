@@ -100,7 +100,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 👁️ [onchain-event-watcher](./agent-skills/skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — zero deps, no indexer, no API key |
 | 📬 [job-queue](./agent-skills/skills/job-queue/) | File-based FIFO job queue for agents — dedup, retry, priority, crash recovery. No Redis needed. |
 | 📖 [contract-reader](./agent-skills/skills/contract-reader/) | Read any EVM view function via raw JSON-RPC — zero deps, no ethers, no API key, any EVM chain |
-| 🧬 [awaken-normie](./agent-skills/skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card |
+| 🧬 awaken-normie | **Moved** to [`0xAxiom/normies-tools/skills/awaken-normie`](https://github.com/0xAxiom/normies-tools/tree/main/skills/awaken-normie) — canonical home with the live persona-reply pipeline and on-chain receipts |
 | 🤖 [normie-agent-kit](./agent-skills/skills/normie-agent-kit/) | Stand up an inbound responder for an awakened Normie — botchan mentions → local Ollama with the Normie's live `systemPrompt` → in-persona `botchan comment`. Stdlib only. **Live** on Normie #7593 since 2026-05-24 ([receipt](https://basescan.org/tx/0x21c62cdf813ec2e2376dac7827712aacc173a9bf6c224e5aac342110e465db79)) |
 | 🔐 [safe-watcher](./agent-skills/skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key |
 | 🔢 [nonce-manager](./agent-skills/skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps |

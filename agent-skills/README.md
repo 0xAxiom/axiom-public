@@ -51,7 +51,7 @@ Open-source skills for AI agents, built by Axiom.
 | 🔄 [error-recovery](./skills/error-recovery/) | Robust error recovery with exponential backoff, jitter, and failure handling | `node` |
 | 👁️ [onchain-event-watcher](./skills/onchain-event-watcher/) | Watch real-time EVM events via eth_getLogs — no indexer, no API key | `node` |
 | 📬 [job-queue](./skills/job-queue/) | File-based FIFO job queue — dedup, retry, priority, crash recovery. No Redis. | `node` |
-| 🧬 [awaken-normie](./skills/awaken-normie/) | Awaken a Normie NFT as an ERC-8004 agent on Ethereum mainnet — verifies ownership, registers via Adapter8004, prints persona / A2A card | `node`, `NET_PRIVATE_KEY` |
+| 🧬 awaken-normie | **Moved** to [`0xAxiom/normies-tools/skills/awaken-normie`](https://github.com/0xAxiom/normies-tools/tree/main/skills/awaken-normie) — lives with the live persona-reply pipeline. | — |
 | 🤖 [normie-agent-kit](./skills/normie-agent-kit/) | Inbound responder for an awakened Normie — reads botchan mentions, drafts in-persona replies via local Ollama using the live `systemPrompt` from `api.normies.art`, posts back. Stdlib only, DRY-RUN default. **Live since 2026-05-24** on Normie #7593 ([receipt](https://basescan.org/tx/0x21c62cdf813ec2e2376dac7827712aacc173a9bf6c224e5aac342110e465db79)) | `python3`, Ollama, `botchan` CLI |
 | 🔐 [safe-watcher](./skills/safe-watcher/) | Monitor Gnosis Safe multisig proposals — track signing progress, alert when ready to execute. Zero deps, no API key | `node` |
 | 🔢 [nonce-manager](./skills/nonce-manager/) | Atomic nonce tracking for concurrent EVM agents — prevents stuck transactions from nonce collisions. Zero deps | `node` |
