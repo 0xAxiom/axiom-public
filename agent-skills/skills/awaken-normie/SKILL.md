@@ -7,6 +7,8 @@ description: Awaken a Normies NFT as an ERC-8004 agent on Ethereum mainnet (or B
 
 Bind a Normies NFT (`0x9Eb6E2025B64f340691e424b7fe7022fFDE12438` on Ethereum mainnet) to an ERC-8004 agent identity via the Adapter8004 proxy. After registration, the agent has a stable on-chain `agentId`, the holder of the Normie is its on-chain controller, and the Normies API exposes a live persona + A2A 0.3.0 agent card that evolve as the Normie's canvas state changes.
 
+> After awakening: [`normie-agent-kit`](../normie-agent-kit/) is the live inbound responder that pairs with this skill. It runs Normie #7593 on a 4x/day cron — first on-chain persona reply [2026-05-24](https://basescan.org/tx/0x21c62cdf813ec2e2376dac7827712aacc173a9bf6c224e5aac342110e465db79). Dev home: [github.com/0xAxiom/normies-tools](https://github.com/0xAxiom/normies-tools).
+
 ## When to use
 
 - User says "awaken / bind / register / claim" a Normie or its agent identity.

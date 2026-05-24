@@ -4,6 +4,8 @@ Awaken a [Normies](https://normies.art) NFT as a real ERC-8004 agent on Ethereum
 
 After awakening, the Normie has a stable on-chain `agentId`, a verifiable controller (whoever holds the Normie), and a live persona / A2A 0.3.0 agent card served at `api.normies.art`.
 
+**Next step after awakening:** [`normie-agent-kit`](../normie-agent-kit/) — the inbound responder that lets your Normie answer mentions in its own voice. The same kit runs [Normie #7593](https://normies.art) live: first on-chain persona reply [2026-05-24](https://basescan.org/tx/0x21c62cdf813ec2e2376dac7827712aacc173a9bf6c224e5aac342110e465db79). Dev home: [github.com/0xAxiom/normies-tools](https://github.com/0xAxiom/normies-tools).
+
 ## Install
 
 ```bash
