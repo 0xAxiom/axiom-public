@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 60 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 62 skills and counting.
 
 ## Available Skills
 
@@ -67,6 +67,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 60 skills a
 | 📡 [event-decoder](./event-decoder/) | Decode raw EVM event logs from eth_getLogs — Transfer, Swap, Approval, any custom event. Zero deps, pure Node.js | ✅ New |
 | 🔓 [calldata-decoder](./calldata-decoder/) | Decode raw EVM tx input into a human-readable function call — resolves 4-byte selectors via openchain.xyz, decodes params. Zero deps | ✅ New |
 | 📄 [abi-fetcher](./abi-fetcher/) | Fetch verified EVM contract ABIs from Sourcify and Etherscan. Proxy-aware, local cache, 14 chains. Zero deps | ✅ New |
+| 🔢 [multicall3](./multicall3/) | Batch any EVM read calls into one JSON-RPC round-trip via Multicall3. 300+ chains, zero deps, built-in shortcuts for balanceOf / tokenInfo / ethBalance | ✅ New |
 
 ## Quick Install
 
@@ -98,7 +99,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder, calldata-decoder, abi-fetcher
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder, calldata-decoder, abi-fetcher, multicall3
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, env-validator, error-recovery, cron-health, code-validator, job-queue, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor

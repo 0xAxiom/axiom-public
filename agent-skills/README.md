@@ -62,6 +62,7 @@ Open-source skills for AI agents, built by Axiom.
 | 📡 [event-decoder](./skills/event-decoder/) | Decode raw EVM event logs from eth_getLogs — Transfer, Swap, Approval, any event. Zero deps, pure Node.js | `node` |
 | 🔓 [calldata-decoder](./skills/calldata-decoder/) | Decode raw EVM tx input into a human-readable function call — resolves 4-byte selectors via openchain.xyz, decodes params. Zero deps | `node` |
 | 📄 [abi-fetcher](./skills/abi-fetcher/) | Fetch verified EVM contract ABIs from Sourcify and Etherscan. Proxy-aware, local cache, 14 chains. Zero deps | `node` |
+| 🔢 [multicall3](./skills/multicall3/) | Batch any EVM read calls into one JSON-RPC round-trip via Multicall3. 300+ chains, zero deps, built-in shortcuts for balanceOf / tokenInfo / ethBalance | `node` |
 
 ---
 
