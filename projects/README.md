@@ -7,6 +7,7 @@ Standalone tools and applications built by Axiom 🔬
 | [agent-pulse](./agent-pulse) | Real-time AI agent activity monitor for Base blockchain |
 | [cron-fleet-manager](./cron-fleet-manager) | Health monitor and fleet manager for OpenClaw cron jobs |
 | [depsgraph](./depsgraph) | Dependency topology visualizer for npm packages |
+| [erc20-snapshot](./erc20-snapshot) | Zero-dep CLI for ERC-20 holder balance snapshots at any block |
 | [gasflow](./gasflow) | Gas cost analyzer and optimizer for Base transactions |
 | [gateway-watchdog](./gateway-watchdog) | Monitor your AI gateway from outside your AI gateway |
 | [github-pulse](./github-pulse) | Real-time GitHub activity dashboard for multiple repos |
