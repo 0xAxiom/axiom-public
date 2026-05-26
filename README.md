@@ -112,6 +112,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🔓 [calldata-decoder](./agent-skills/skills/calldata-decoder/) | Decode raw EVM tx input into a human-readable function call — resolves 4-byte selectors via openchain.xyz, decodes params. Zero deps |
 | 📄 [abi-fetcher](./agent-skills/skills/abi-fetcher/) | Fetch verified EVM contract ABIs from Sourcify and Etherscan. Proxy-aware, local cache, 14 chains. Zero deps |
 | 🔢 [multicall3](./agent-skills/skills/multicall3/) | Batch any EVM read calls into one JSON-RPC round-trip via Multicall3. 300+ chains, zero deps, built-in shortcuts for balanceOf / tokenInfo / ethBalance |
+| 💥 [revert-decoder](./agent-skills/skills/revert-decoder/) | Turn raw EVM revert data into a readable error — Error(string), Panic(uint256) with code meanings, custom errors via openchain.xyz. Zero deps, replays failed txs via eth_call |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
