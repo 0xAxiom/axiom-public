@@ -113,6 +113,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 📄 [abi-fetcher](./agent-skills/skills/abi-fetcher/) | Fetch verified EVM contract ABIs from Sourcify and Etherscan. Proxy-aware, local cache, 14 chains. Zero deps |
 | 🔢 [multicall3](./agent-skills/skills/multicall3/) | Batch any EVM read calls into one JSON-RPC round-trip via Multicall3. 300+ chains, zero deps, built-in shortcuts for balanceOf / tokenInfo / ethBalance |
 | 💥 [revert-decoder](./agent-skills/skills/revert-decoder/) | Turn raw EVM revert data into a readable error — Error(string), Panic(uint256) with code meanings, custom errors via openchain.xyz. Zero deps, replays failed txs via eth_call |
+| 🔥 [erc20-burn-stats](./agent-skills/skills/erc20-burn-stats/) | Count ERC-20 burns by scanning Transfer events to a dead address. Auto-detects deployment block, adaptive chunking with 429-backoff, any EVM chain. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
