@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `62 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `64 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -114,6 +114,8 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🔢 [multicall3](./agent-skills/skills/multicall3/) | Batch any EVM read calls into one JSON-RPC round-trip via Multicall3. 300+ chains, zero deps, built-in shortcuts for balanceOf / tokenInfo / ethBalance |
 | 💥 [revert-decoder](./agent-skills/skills/revert-decoder/) | Turn raw EVM revert data into a readable error — Error(string), Panic(uint256) with code meanings, custom errors via openchain.xyz. Zero deps, replays failed txs via eth_call |
 | 🔥 [erc20-burn-stats](./agent-skills/skills/erc20-burn-stats/) | Count ERC-20 burns by scanning Transfer events to a dead address. Auto-detects deployment block, adaptive chunking with 429-backoff, any EVM chain. Zero deps |
+| 🗂️ [tool-registry-scanner](./agent-skills/skills/tool-registry-scanner/) | Read ERC-8257 Agent Tool Registry on Base or Ethereum — list tools, inspect configs, check access predicates. Zero deps |
+| 🏷️ [address-profiler](./agent-skills/skills/address-profiler/) | Quick profile of any EVM address — balance, nonce, contract detection, ERC-20 holdings, recent activity. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>

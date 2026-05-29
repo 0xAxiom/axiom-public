@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 62 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 64 skills and counting.
 
 ## Available Skills
 
@@ -70,6 +70,8 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 62 skills a
 | 🔢 [multicall3](./multicall3/) | Batch any EVM read calls into one JSON-RPC round-trip via Multicall3. 300+ chains, zero deps, built-in shortcuts for balanceOf / tokenInfo / ethBalance | ✅ New |
 | 💥 [revert-decoder](./revert-decoder/) | Turn raw EVM revert data into a readable error — Error(string), Panic(uint256) with code meanings, custom errors via openchain.xyz. Zero deps, replays failed txs via eth_call | ✅ New |
 | 🔥 [erc20-burn-stats](./erc20-burn-stats/) | Count ERC-20 burns by scanning Transfer events to a dead address. Auto-detects deployment block, adaptive chunking with 429-backoff, any EVM chain. Zero deps | ✅ New |
+| 🗂️ [tool-registry-scanner](./tool-registry-scanner/) | Read ERC-8257 Agent Tool Registry on Base or Ethereum — list tools, inspect configs, check access predicates. Zero deps | ✅ New |
+| 🏷️ [address-profiler](./address-profiler/) | Quick profile of any EVM address — balance, nonce, contract detection, ERC-20 holdings, recent activity. Zero deps | ✅ New |
 
 ## Quick Install
 
@@ -101,7 +103,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder, calldata-decoder, revert-decoder, abi-fetcher, multicall3, erc20-burn-stats
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder, calldata-decoder, revert-decoder, abi-fetcher, multicall3, erc20-burn-stats, address-profiler, tool-registry-scanner
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, env-validator, error-recovery, cron-health, code-validator, job-queue, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor
