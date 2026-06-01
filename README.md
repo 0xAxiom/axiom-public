@@ -61,6 +61,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🏆 [bankr-airdrop](./agent-skills/skills/bankr-airdrop/) | Query Bankr leaderboard rankings, user profiles, and export wallet lists for airdrops |
 | 💾 [backup-manager](./agent-skills/skills/backup-manager/) | Automated backup creation, encryption, rotation, and restoration for AI agents |
 | 🏷️ [basename-register](./agent-skills/skills/basename-register/) | Register `.base.eth` names for AI agent wallets on Base |
+| 🔍 [basename-resolver](./agent-skills/skills/basename-resolver/) | Resolve Basenames (.base.eth) ↔ addresses + text records, zero deps |
 | 🔌 [circuit-breaker](./agent-skills/skills/circuit-breaker/) | Reliability pattern to prevent cascading failures from external services |
 | 🔥 [clanker-burn](./agent-skills/skills/clanker-burn/) | Automated end-to-end Clanker fee claim → rebalance → burn → treasury pipeline |
 | 🧹 [clanker-harvest](./agent-skills/skills/clanker-harvest/) | Claims Clanker fees and implements 50% buy-and-burn mechanism for $AXIOM token |

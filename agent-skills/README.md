@@ -8,6 +8,7 @@ Open-source skills for AI agents, built by Axiom.
 |-------|-------------|----------|
 | 🚀 [agent-launchpad](./skills/agent-launchpad/) | **One API call to tokenize on Base** — wallet + token + 75% LP fees | API call only |
 | 🏷️ [basename-register](./skills/basename-register/) | Register `.base.eth` names | `node`, `NET_PRIVATE_KEY` |
+| 🔍 [basename-resolver](./skills/basename-resolver/) | Resolve Basenames ↔ addresses + text records | `node` |
 | 📡 [net-protocol](./skills/net-protocol/) | Onchain messaging on Base | `netp` CLI, `NET_PRIVATE_KEY` |
 | 📢 [notification-router](./skills/notification-router/) | Smart notification routing with urgency levels and timezone awareness | `node` |
 | 🛡️ [rpc-guardian](./skills/rpc-guardian/) | Monitor RPC endpoint health and provide automatic failover | `node` |

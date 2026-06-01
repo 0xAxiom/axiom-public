@@ -16,6 +16,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 65 skills a
 | 🪂 [bankr-airdrop](./bankr-airdrop/) | Bankr leaderboard rankings, profiles, wallet export | ✅ Tested |
 | 💾 [backup-manager](./backup-manager/) | Automated backup creation, encryption, rotation, and restoration | ✅ Tested |
 | 🏷️ [basename-register](./basename-register/) | Register `.base.eth` names programmatically | ✅ Tested |
+| 🔍 [basename-resolver](./basename-resolver/) | Resolve Basenames (.base.eth) ↔ addresses + text records, zero deps | ✅ Tested |
 | 🔌 [circuit-breaker](./circuit-breaker/) | Reliability pattern to prevent cascading failures from external services | ✅ Tested |
 | 🔥 [clanker-harvest](./clanker-harvest/) | Claim Clanker LP fees, burn tokens, build treasury | ✅ Tested |
 | 📢 [clawfomo-bot](./clawfomo-bot/) | FOMO-driven launch alert bot | ✅ Tested |
