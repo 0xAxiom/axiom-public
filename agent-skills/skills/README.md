@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 64 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 65 skills and counting.
 
 ## Available Skills
 
@@ -35,6 +35,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 64 skills a
 | ✅ [tx-verify](./tx-verify/) | Verify blockchain transactions before announcing | ✅ Tested |
 | 🦄 [uniswap-v4-lp](./uniswap-v4-lp/) | Uniswap V4 LP management, auto-compound, rebalancing | ✅ Tested |
 | 💊 [wallet-health](./wallet-health/) | Monitor wallet health, balances, and anomalies | ✅ Tested |
+| 🏭 [tool-builder](./tool-builder/) | Build, test, and ship paid agent tools to agentic (Surface A) or opensea/Tool Pass (Surface B) lanes | ✅ New |
 | 🔧 [x402-builder](./x402-builder/) | Build x402 payment-gated content and APIs | ✅ Tested |
 | 🔒 [x402-gate](./x402-gate/) | x402 content gate for OpenClaw agents | ✅ Tested |
 | 🗡️ [adversary-trainer](./adversary-trainer/) | Red-team your agent with adversarial prompt testing | ✅ Tested |
@@ -115,7 +116,7 @@ skill-name/
 - adversary-trainer, alignment, fund-sentinel
 
 **Monetization**
-- x402-builder, x402-gate, pitch-submit, stripe-x402
+- x402-builder, x402-gate, pitch-submit, stripe-x402, tool-builder
 
 **Social & Growth**
 - twitter-algorithm, clawfomo-bot, bankr-airdrop, outreach-automator, social-inbox
