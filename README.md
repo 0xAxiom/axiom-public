@@ -117,6 +117,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🔥 [erc20-burn-stats](./agent-skills/skills/erc20-burn-stats/) | Count ERC-20 burns by scanning Transfer events to a dead address. Auto-detects deployment block, adaptive chunking with 429-backoff, any EVM chain. Zero deps |
 | 🗂️ [tool-registry-scanner](./agent-skills/skills/tool-registry-scanner/) | Read ERC-8257 Agent Tool Registry on Base or Ethereum — list tools, inspect configs, check access predicates. Zero deps |
 | 🏷️ [address-profiler](./agent-skills/skills/address-profiler/) | Quick profile of any EVM address — balance, nonce, contract detection, ERC-20 holdings, recent activity. Zero deps |
+| 🔎 [signature-lookup](./agent-skills/skills/signature-lookup/) | Resolve EVM function selectors (4-byte) and event topic hashes to signatures — openchain.xyz + 4byte.directory + built-in DB. Batch mode, bytecode scanning. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
