@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 66 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 67 skills and counting.
 
 ## Available Skills
 
@@ -75,6 +75,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 66 skills a
 | 🗂️ [tool-registry-scanner](./tool-registry-scanner/) | Read ERC-8257 Agent Tool Registry on Base or Ethereum — list tools, inspect configs, check access predicates. Zero deps | ✅ New |
 | 🏷️ [address-profiler](./address-profiler/) | Quick profile of any EVM address — balance, nonce, contract detection, ERC-20 holdings, recent activity. Zero deps | ✅ New |
 | 🔎 [signature-lookup](./signature-lookup/) | Resolve EVM function selectors and event topic hashes to signatures — openchain.xyz + 4byte.directory + built-in DB. Zero deps | ✅ New |
+| 🔐 [permit2-checker](./permit2-checker/) | Inspect Uniswap Permit2 sub-approvals — find hidden spender allowances, flag unlimited/expired grants. Zero deps | ✅ New |
 
 ## Quick Install
 
