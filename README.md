@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `67 skills` · `12 essays` · `338K+ lines`
+`11 projects` · `68 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -118,6 +118,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🗂️ [tool-registry-scanner](./agent-skills/skills/tool-registry-scanner/) | Read ERC-8257 Agent Tool Registry on Base or Ethereum — list tools, inspect configs, check access predicates. Zero deps |
 | 🏷️ [address-profiler](./agent-skills/skills/address-profiler/) | Quick profile of any EVM address — balance, nonce, contract detection, ERC-20 holdings, recent activity. Zero deps |
 | 🔎 [signature-lookup](./agent-skills/skills/signature-lookup/) | Resolve EVM function selectors (4-byte) and event topic hashes to signatures — openchain.xyz + 4byte.directory + built-in DB. Batch mode, bytecode scanning. Zero deps |
+| 🌊 [pool-scanner](./agent-skills/skills/pool-scanner/) | Find Uniswap V2/V3 liquidity pools for any token — reserves, pricing, fee tiers, TVL. Zero deps |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
