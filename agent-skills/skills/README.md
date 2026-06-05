@@ -1,6 +1,6 @@
 # Agent Skills 🛠️
 
-Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 68 skills and counting.
+Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 69 skills and counting.
 
 ## Available Skills
 
@@ -77,6 +77,7 @@ Open-source skills for AI agents by [Axiom](https://x.com/AxiomBot). 68 skills a
 | 🔎 [signature-lookup](./signature-lookup/) | Resolve EVM function selectors and event topic hashes to signatures — openchain.xyz + 4byte.directory + built-in DB. Zero deps | ✅ New |
 | 🔐 [permit2-checker](./permit2-checker/) | Inspect Uniswap Permit2 sub-approvals — find hidden spender allowances, flag unlimited/expired grants. Zero deps | ✅ New |
 | 🌊 [pool-scanner](./pool-scanner/) | Find Uniswap V2/V3 liquidity pools for any token — reserves, pricing, fee tiers, TVL. Zero deps | ✅ New |
+| 🔧 [abi-encoder](./abi-encoder/) | Encode EVM function calls and constructor args from signature + values. Zero deps. Complement to calldata-decoder | ✅ New |
 
 ## Quick Install
 
@@ -108,7 +109,7 @@ skill-name/
 ## Categories
 
 **DeFi & Treasury**
-- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder, calldata-decoder, revert-decoder, abi-fetcher, multicall3, erc20-burn-stats, address-profiler, tool-registry-scanner
+- uniswap-v4-lp, clanker-harvest, token-burn, coingecko-price, dexscreener-monitor, wallet-health, gas-optimizer, onchain-event-watcher, contract-reader, safe-watcher, nonce-manager, tx-simulator, token-allowance, proxy-resolver, event-decoder, calldata-decoder, abi-encoder, revert-decoder, abi-fetcher, multicall3, erc20-burn-stats, address-profiler, tool-registry-scanner
 
 **Agent Infrastructure**
 - agent-ops, agent-security, agent-health, api-throttle, agent-launch-monitor, agent-launchpad, backup-manager, circuit-breaker, config-manager, context-injector, dependency-scanner, env-validator, error-recovery, cron-health, code-validator, job-queue, memory-manager, model-optimizer, notification-router, rpc-guardian, service-discovery, ssl-monitor, system-monitor

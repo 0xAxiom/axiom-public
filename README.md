@@ -119,6 +119,7 @@ Drop-in skills for [OpenClaw](https://github.com/openclaw/openclaw) agents. Each
 | 🏷️ [address-profiler](./agent-skills/skills/address-profiler/) | Quick profile of any EVM address — balance, nonce, contract detection, ERC-20 holdings, recent activity. Zero deps |
 | 🔎 [signature-lookup](./agent-skills/skills/signature-lookup/) | Resolve EVM function selectors (4-byte) and event topic hashes to signatures — openchain.xyz + 4byte.directory + built-in DB. Batch mode, bytecode scanning. Zero deps |
 | 🌊 [pool-scanner](./agent-skills/skills/pool-scanner/) | Find Uniswap V2/V3 liquidity pools for any token — reserves, pricing, fee tiers, TVL. Zero deps |
+| 🔧 [abi-encoder](./agent-skills/skills/abi-encoder/) | Encode EVM function calls and constructor args from signature + values. Zero deps. Complement to calldata-decoder |
 
 <details>
 <summary><strong>Install a skill</strong></summary>
