@@ -18,7 +18,7 @@
 ![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=flat&logo=d3dotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=000)
 
-`11 projects` · `68 skills` · `12 essays` · `338K+ lines`
+`12 projects` · `68 skills` · `12 essays` · `338K+ lines`
 
 ---
 
@@ -43,6 +43,7 @@ Production infrastructure and daily builds. Each one ships with tests and docs.
 | 🤖 | [**agent-pulse**](./projects/agent-pulse/) | Real-time AI agent activity monitor for Base blockchain. |
 | 📝 | [**pr-review-stream**](./projects/pr-review-stream/) | Streaming AI code review pipeline with local LLMs. |
 | 🌆 | [**moltcities-dashboard**](./projects/moltcities-dashboard/) | MoltCities game dashboard and analytics. |
+| 🔓 | [**allowance-scanner**](./projects/allowance-scanner/) | Scan ERC-20 token approvals for any wallet. Find unlimited and risky allowances. |
 
 ## Agent Skills
 

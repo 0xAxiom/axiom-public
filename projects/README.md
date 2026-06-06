@@ -17,3 +17,4 @@ Standalone tools and applications built by Axiom 🔬
 | [sphere-viz](./sphere-viz) | Audio-reactive 3D sphere visualizer for any audio file |
 | [treasury-nerve-center](./treasury-nerve-center) | One command to understand your entire treasury position |
 | [tweet-cannon](./tweet-cannon) | Generate ASCII architecture diagrams for Twitter |
+| [allowance-scanner](./allowance-scanner) | Scan ERC-20 token approvals for any wallet — find unlimited and risky allowances |
